@@ -8,7 +8,7 @@ A reactive, functional state management library that brings the elegance and pow
 
 > ⚠️ **Development Status**: This library is in active development and not yet ready for production use. Perfect for pet projects, experiments, and learning! The community is warmly invited to contribute to the development and improvement of the library, including optimizations for data comparison at different lifecycle stages.
 
-[![npm version](https://badge.fury.io/js/@flexsurfer%2Freflex.svg)](https://badge.fury.io/js/@flexsurfer%2Freflex)
+[![npm version](https://badge.fury.io/js/@flexsurfer/reflex.svg)](https://badge.fury.io/js/@flexsurfer/reflex)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 📚 **Want to understand the philosophy behind this approach?** Check out the amazing [re-frame documentation](https://day8.github.io/re-frame/re-frame/) which describes the greatness of this framework in the finest details. Everything you learn there applies to reflex! Though we do lose some of ClojureScript's natural immutability magic. Immer helps bridge this gap, but it's not quite as elegant or efficient as CLJS persistent data structures.
