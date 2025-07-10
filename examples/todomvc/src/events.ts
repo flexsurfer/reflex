@@ -1,4 +1,4 @@
-import { regEvent } from '@lib/index';
+import { regEvent, clearHandlers } from '@lib/index';
 import type { Todo, TodoId, Todos, Showing } from './db';
 import { current } from 'immer';
 
@@ -79,3 +79,15 @@ regEvent('clear-completed', ({ draftDb }) => {
 regEvent('set-showing', ({ draftDb }, showing: Showing) => {
     draftDb.showing = showing;
 });
+
+if (import.meta.hot) {
+    import.meta.hot.dispose(() => {
+        clearHandlers('event');
+    })
+
+    import.meta.hot.accept((newModule) => {
+        if (newModule) {
+            console.log('updated: new events module')
+        }
+    })
+}

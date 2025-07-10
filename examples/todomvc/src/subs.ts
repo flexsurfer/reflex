@@ -1,4 +1,4 @@
-import { regSub } from '@lib/index';
+import { regSub, setupSubsHotReload } from '@lib/index';
 import type { Todos, Showing } from './db';
 
 // Root subscriptions
@@ -30,3 +30,9 @@ regSub('footer-counts', (todos: Todos) => {
     const done = todosArray.filter(todo => todo.done).length;
     return [active, done];
 }, () => [['todos']]);
+
+if (import.meta.hot) {
+    const { dispose, accept } = setupSubsHotReload();
+    import.meta.hot.dispose(dispose);
+    import.meta.hot.accept(accept);
+}

@@ -6,10 +6,20 @@ export { regSub } from './subs';
 export { regEffect } from './fx';
 export { regCoeffect } from './cofx';
 export { regGlobalInterceptor, getGlobalInterceptors, clearGlobalInterceptors, setDebugEnabled, isDebugEnabled } from './settings';
+export { clearHandlers, clearReactions, clearSubs } from './registrar';
 
 export { dispatch } from './router';
 export { debounceAndDispatch, throttleAndDispatch } from './debounce'
 export { useSubscription } from './hook';
+export { 
+  registerHotReloadCallback, 
+  triggerHotReload, 
+  clearHotReloadCallbacks, 
+  useHotReload, 
+  useHotReloadKey, 
+  setupSubsHotReload, 
+  HotReloadWrapper 
+} from './hot-reload';
 
 // Trace
 export { enableTracing, disableTracing, registerTraceCb, enableTracePrint } from './trace';

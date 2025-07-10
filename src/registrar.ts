@@ -86,6 +86,12 @@ export function clearReactions(id?: string): void {
     }
 }
 
+export function clearSubs(): void {
+    clearReactions();
+    clearHandlers('sub');
+    clearHandlers('subDeps');
+}
+
 // === Interceptor Registry Functions ===
 const interceptorsRegistry = new Map<Id, Interceptor[]>();
 
