@@ -75,7 +75,7 @@ const Counter = () => {
 
 ### Events & Effects
 
-Events are pure functions that describe state transitions:
+Events define state transitions and may declare side effects:
 
 ```typescript
 // Simple state update

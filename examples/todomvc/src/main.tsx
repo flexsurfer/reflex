@@ -10,7 +10,7 @@ import { dispatch, enableTracing, enableTracePrint, HotReloadWrapper } from '@li
 import { enableMapSet } from 'immer'
 import { EVENT_IDS } from './event-ids';
 
-// For todos filed in appDb Map is used, so we need to enable it explicitly
+// todos field in appDb is a Map, so we need to enable it explicitly for immer
 enableMapSet()
 // Enable tracing and trace printing in console for debugging
 enableTracing()
