@@ -1,12 +1,13 @@
 import { regSub, setupSubsHotReload } from '@lib/index';
 import type { Todos, Showing } from './db';
+import { SUB_IDS } from './sub-ids';
 
 // Root subscriptions
-regSub('todos');
-regSub('showing');
+regSub(SUB_IDS.TODOS);
+regSub(SUB_IDS.SHOWING);
 
 // Computed subscriptions
-regSub('visible-todos', (todos: Todos, showing: Showing) => {
+regSub(SUB_IDS.VISIBLE_TODOS, (todos: Todos, showing: Showing) => {
     if (!todos) return [];
     const todosArray = Array.from(todos.values());
     switch (showing) {
@@ -17,19 +18,19 @@ regSub('visible-todos', (todos: Todos, showing: Showing) => {
         default:
             return todosArray;
     }
-}, () => [['todos'], ['showing']]);
+}, () => [[SUB_IDS.TODOS], [SUB_IDS.SHOWING]]);
 
-regSub('all-complete?', (todos: Todos) => {
+regSub(SUB_IDS.ALL_COMPLETE, (todos: Todos) => {
     const todosArray = Array.from(todos.values());
     return todosArray.length > 0 && todosArray.every(todo => todo.done);
-}, () => [['todos']]);
+}, () => [[SUB_IDS.TODOS]]);
 
-regSub('footer-counts', (todos: Todos) => {
+regSub(SUB_IDS.FOOTER_COUNTS, (todos: Todos) => {
     const todosArray = Array.from(todos.values());
     const active = todosArray.filter(todo => !todo.done).length;
     const done = todosArray.filter(todo => todo.done).length;
     return [active, done];
-}, () => [['todos']]);
+}, () => [[SUB_IDS.TODOS]]);
 
 if (import.meta.hot) {
     const { dispose, accept } = setupSubsHotReload();

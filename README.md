@@ -58,7 +58,7 @@ regEvent('decrement', ({ draftDb }) => {
 regSub('counter');
 
 // React component
-function Counter() {
+const Counter = () => {
   const counter = useSubscription<number>(['counter']);
   
   return (
@@ -88,7 +88,6 @@ dispatch(['set-name', 'John Doe']);
 
 // Event with side effects
 regEvent('save-user', ({ draftDb }, user) => {
-  draftDb.user = user; 
   draftDb.saving = true; 
   return [
     ['http', {

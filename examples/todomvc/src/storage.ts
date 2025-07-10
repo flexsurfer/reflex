@@ -1,6 +1,8 @@
 import { regCoeffect, regEffect } from '@lib/index';
 import type { CoEffects } from '@lib/types';
 import type { Todo, TodoId, Todos } from "./db";
+import { COEFFECT_IDS } from './coeffect-ids';
+import { EFFECT_IDS } from './effect-ids';
 
 // -- Local Storage  ----------------------------------------------------------
 const LS_KEY = 'todos-reflex';
@@ -30,7 +32,7 @@ export function todosFromLocalStore(): Todos {
 // -- Coeffects ---------------------------------------------------
 
 // This function provides the todos stored in localStorage as a coeffect.
-regCoeffect('local-store-todos', (cofx: CoEffects) => {
+regCoeffect(COEFFECT_IDS.LOCAL_STORE_TODOS, (cofx: CoEffects) => {
     cofx.localStoreTodos = todosFromLocalStore()
     return cofx
 });
@@ -38,6 +40,6 @@ regCoeffect('local-store-todos', (cofx: CoEffects) => {
 // -- Effects -----------------------------------------------------------------
 
 // This function saves the todos to localStorage when the todos are updated.
-regEffect('todos-to-local-store', (todos) => {
+regEffect(EFFECT_IDS.TODOS_TO_LOCAL_STORE, (todos) => {
     todosToLocalStore(todos);
 });

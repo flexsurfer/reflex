@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSubscription, dispatch } from '@lib/index';
+import { EVENT_IDS } from './event-ids';
+import { SUB_IDS } from './sub-ids';
 import type { Todo, Showing } from './db';
 
 interface TodoInputProps {
@@ -71,9 +73,9 @@ const TodoItem: React.FC<TodoItemProps> = React.memo(({ todo }) => {
   
   const handleSave = (newTitle: string) => {
     if (newTitle.length === 0) {
-      dispatch(['delete-todo', todo.id]);
+      dispatch([EVENT_IDS.DELETE_TODO, todo.id]);
     } else {
-      dispatch(['save', todo.id, newTitle]);
+      dispatch([EVENT_IDS.SAVE, todo.id, newTitle]);
     }
     setEditing(false);
   };
@@ -85,14 +87,14 @@ const TodoItem: React.FC<TodoItemProps> = React.memo(({ todo }) => {
           className="toggle"
           type="checkbox"
           checked={todo.done}
-          onChange={() => dispatch(['toggle-done', todo.id])}
+          onChange={() => dispatch([EVENT_IDS.TOGGLE_DONE, todo.id])}
         />
         <label onDoubleClick={() => setEditing(true)}>
           {todo.title}
         </label>
         <button
           className="destroy"
-          onClick={() => dispatch(['delete-todo', todo.id])}
+          onClick={() => dispatch([EVENT_IDS.DELETE_TODO, todo.id])}
         />
       </div>
       {editing && (
@@ -108,7 +110,7 @@ const TodoItem: React.FC<TodoItemProps> = React.memo(({ todo }) => {
 });
 
 const VisibleTodos: React.FC = () => {
-    const visibleTodos = useSubscription<Todo[]>(['visible-todos'], 'VisibleTodos');
+    const visibleTodos = useSubscription<Todo[]>([SUB_IDS.VISIBLE_TODOS], 'VisibleTodos');
 
     return (
         <ul id="todo-list">
@@ -120,7 +122,7 @@ const VisibleTodos: React.FC = () => {
   };
 
 const TaskList: React.FC = () => {
-  const allComplete = useSubscription<boolean>(['all-complete?'], 'TaskList');
+  const allComplete = useSubscription<boolean>([SUB_IDS.ALL_COMPLETE], 'TaskList');
 
   return (
     <section id="main">
@@ -128,7 +130,7 @@ const TaskList: React.FC = () => {
         id="toggle-all"
         type="checkbox"
         checked={allComplete}
-        onChange={() => dispatch(['complete-all-toggle'])}
+        onChange={() => dispatch([EVENT_IDS.COMPLETE_ALL_TOGGLE])}
       />
       <label htmlFor="toggle-all">
         Mark all as complete
@@ -139,8 +141,8 @@ const TaskList: React.FC = () => {
 };
 
 const FooterControls: React.FC = () => {
-  const [active, done] = useSubscription<[number, number]>(['footer-counts'], 'FooterControls');
-  const showing = useSubscription<Showing>(['showing'], 'FooterControls');
+  const [active, done] = useSubscription<[number, number]>([SUB_IDS.FOOTER_COUNTS], 'FooterControls');
+  const showing = useSubscription<Showing>([SUB_IDS.SHOWING], 'FooterControls');
 
   const filterLink = (filterKw: Showing, text: string) => (
     <a
@@ -148,7 +150,7 @@ const FooterControls: React.FC = () => {
       href={`#/${filterKw}`}
       onClick={(e) => {
         e.preventDefault();
-        dispatch(['set-showing', filterKw]);
+        dispatch([EVENT_IDS.SET_SHOWING, filterKw]);
       }}
     >
       {text}
@@ -168,7 +170,7 @@ const FooterControls: React.FC = () => {
       {done > 0 && (
         <button
           id="clear-completed"
-          onClick={() => dispatch(['clear-completed'])}
+          onClick={() => dispatch([EVENT_IDS.CLEAR_COMPLETED])}
         >
           Clear completed
         </button>
@@ -180,13 +182,13 @@ const FooterControls: React.FC = () => {
 const TaskEntry: React.FC = () => {
   return (
     <header id="header">
-      <h1>todos</h1>
+      <h1>todos 3</h1>
       <TodoInput
         id="new-todo"
         placeholder="What needs to be done?"
         onSave={(title) => {
           if (title.length > 0) {
-            dispatch(['add-todo', title]);
+            dispatch([EVENT_IDS.ADD_TODO, title]);
           }
         }}
       />
