@@ -1,6 +1,6 @@
 {
   "name": "@flexsurfer/reflex",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -20,8 +20,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --dts --format esm,cjs --clean",
-    "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "test": "jest --passWithNoTests",
     "test:clean": "jest --passWithNoTests --silent",
     "test:watch": "jest --passWithNoTests --watch"

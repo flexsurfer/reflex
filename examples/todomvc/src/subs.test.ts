@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { getHandler } from '@lib/registrar';
-import { initAppDb, getAppDb } from '@lib/db';
+import { initAppDb } from '@lib/db';
 import { SUB_IDS } from './sub-ids';
 import type { DB } from './db';
 import type { SubHandler, SubDepsHandler } from '@lib/types';

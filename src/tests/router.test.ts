@@ -300,6 +300,31 @@ describe('EventQueue', () => {
       expect(getTestLogCalls().error.length).toBe(1);
       expect(getTestLogCalls().error[0][0]).toContain('[reflex] router state transition not found');
     });
+
+    test('handles exception mid-queue without crashing on subsequent events', async () => {
+      const calls: EventVector[] = [];
+      const errorQueue = new EventQueue((event: EventVector) => {
+        calls.push(event);
+        if (event[0] === 'error-event') {
+          throw new Error('Mid-queue error');
+        }
+      });
+
+      errorQueue.push(['before1']);
+      errorQueue.push(['before2']);
+      errorQueue.push(['error-event']);
+      errorQueue.push(['after1']);
+      errorQueue.push(['after2']);
+
+      await waitForScheduled();
+
+      // Should process before events fully, start processing error-event (add to calls), then throw and purge,
+      // skipping after events without crashing
+      expect(calls).toEqual([['before1'], ['before2'], ['error-event']]);
+      expect(errorQueue.getState()).toBe('idle');
+      expect(errorQueue.getQueueLength()).toBe(0);
+      expect(getTestLogCalls().error.length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   describe('Pause and Resume', () => {
