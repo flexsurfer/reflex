@@ -120,6 +120,10 @@ export class EventQueue {
         let n = this.queue.length;
         while (n > 0) {
             const nextEvent = this.queue[0];
+            // Check if queue was purged (e.g., due to exception) or if event is undefined
+            if (!nextEvent || this.queue.length === 0) {
+                break;
+            }
             const metaKeys = (nextEvent as any).meta ? Object.keys((nextEvent as any).meta) : [];
             const laterKey = metaKeys.find(k => laterFns[k]);
             if (laterKey) {

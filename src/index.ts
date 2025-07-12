@@ -2,7 +2,7 @@
 export { initAppDb } from './db';
 
 export { regEvent, regEventErrorHandler, defaultErrorHandler } from './events';
-export { regSub } from './subs';
+export { regSub, getSubscriptionValue } from './subs';
 export { regEffect } from './fx';
 export { regCoeffect } from './cofx';
 export { regGlobalInterceptor, getGlobalInterceptors, clearGlobalInterceptors, setDebugEnabled, isDebugEnabled } from './settings';

@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { SubVector } from './types';
-import { getOrCreateReaction } from './subs';
+import { getOrCreateReaction, getSubscriptionValue } from './subs';
 
 export function useSubscription<T>(subVector: SubVector, componentName: string = 'react component'): T {
   const [val, setVal] = useState<T>(() => {
-    const reaction = getOrCreateReaction(subVector)
-    return reaction ? reaction.getValue() : undefined as T
+    return getSubscriptionValue(subVector)
   })
   useEffect(() => {
     const reaction = getOrCreateReaction(subVector)
