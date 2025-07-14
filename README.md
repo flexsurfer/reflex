@@ -16,7 +16,7 @@ A reactive, functional state management library that brings the elegance and pow
 
 ## ✨ Why Reflex?
 
-After 10+ years of building applications with re-frame in the ClojureScript world, I wanted to bring the same architectural elegance to the JavaScript/TypeScript ecosystem. Reflex is not just another state management library—it's a battle-tested pattern that promotes:
+After many years of building applications with re-frame in the ClojureScript world, I wanted to bring the same architectural elegance to the JavaScript/TypeScript ecosystem. Reflex is not just another state management library—it's a battle-tested pattern that promotes:
 
 🎯 **Predictable State Management** - Unidirectional data flow with pure functions  
 🧩 **Composable Architecture** - Build complex apps from simple, reusable pieces  
