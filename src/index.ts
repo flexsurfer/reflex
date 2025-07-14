@@ -6,7 +6,7 @@ export { regSub, getSubscriptionValue } from './subs';
 export { regEffect } from './fx';
 export { regCoeffect } from './cofx';
 export { regGlobalInterceptor, getGlobalInterceptors, clearGlobalInterceptors, setDebugEnabled, isDebugEnabled } from './settings';
-export { clearHandlers, clearReactions, clearSubs } from './registrar';
+export { getHandler, clearHandlers, clearReactions, clearSubs } from './registrar';
 
 export { dispatch } from './router';
 export { debounceAndDispatch, throttleAndDispatch } from './debounce'
