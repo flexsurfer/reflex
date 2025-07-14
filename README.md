@@ -266,7 +266,9 @@ regSub('count');
 - [re-frame Documentation](https://day8.github.io/re-frame/re-frame/) - The original and comprehensive guide to understanding the philosophy and patterns
 - Step-by-Step Tutorial - TBD
 - API Reference - TBD
-- Examples - TBD
+- Examples
+  - [TodoMVC](https://github.com/flexsurfer/reflex/tree/main/examples/todomvc) - Classic todo app implementation showcasing core reflex patterns
+  - [Einbürgerungstest](https://github.com/flexsurfer/einburgerungstest/) - German citizenship test app built with reflex ([Live Demo](https://www.ebtest.org/))
 - Best Practices - TBD
 
 ## 🤝 Contributing
