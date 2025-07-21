@@ -35,8 +35,18 @@ export const doFxInterceptor: Interceptor = {
       return context;
     }
   
-    effects.filter(effect => Array.isArray(effect) && effect.length === 2).forEach(([key, val]) => {
-  
+    effects.forEach((effect: unknown) => {
+      
+      if (!effect) {
+        return;
+      }
+
+      if (!Array.isArray(effect) || effect.length === 0 || effect.length > 2) {
+        consoleLog('warn', `[reflex] invalid effect in effects:`, effect);
+        return;
+      }
+      const [key, val] = effect;
+
       const effectFn = getHandler(KIND, key) as EffectHandler | undefined;
       if (effectFn) {
         try {

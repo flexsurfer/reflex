@@ -17,7 +17,7 @@ export type SubVector = [Id, ...any[]];
 export type SubHandler = (...values: any[]) => any;
 export type SubDepsHandler = (...params: any[]) => SubVector[];
 
-export type Effects = [string, any][];
+export type Effects = [string, any?][];
 
 export interface DispatchLaterEffect {
   ms: number;

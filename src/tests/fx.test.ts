@@ -374,5 +374,26 @@ describe('regFx - Custom Effects', () => {
         processed: true
       });
     });
+
+    it('should execute custom effect without parameters', async () => {
+      const noParamSpy = jest.fn();
+
+      // Register a custom effect that ignores the value
+      regEffect('no-param', () => {
+        noParamSpy();
+      });
+
+      // Register an event that uses the effect with undefined value
+      regEvent('test-no-param', () => [['no-param']]);
+
+      // Dispatch the event
+      dispatch(['test-no-param']);
+
+      // Wait for async processing
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Verify the effect was called
+      expect(noParamSpy).toHaveBeenCalledTimes(1);
+    });
   });
 }); 
