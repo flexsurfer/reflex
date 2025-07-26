@@ -38,7 +38,7 @@ export function updateAppDbWithPatches<T = Record<string, any>>(newDb: Db<T>, pa
             consoleLog('error', `[reflex] updateAppDb: root reaction id ${subVectorKey} registered with a computed function. This is not allowed.`)
             continue;
           }
-          
+
           reactionsQueue.add(subVectorKey);
         }
       }

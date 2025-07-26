@@ -106,6 +106,8 @@ function eventHandlerInterceptor(handler: EventHandler): Interceptor {
       context.newDb = newDb;
       context.patches = patches;
 
+      mergeTrace({ tags: { 'patches': patches , 'effects': effects}});
+
       if (!Array.isArray(effects)) {
         consoleLog('warn', `[reflex] effects expects a vector, but was given ${typeof effects}`);
       } else {
@@ -147,9 +149,7 @@ export function handle(eventV: EventVector): void {
   withTrace(
     { operation: eventId, opType: KIND, tags: { event: eventV } },
     () => {
-      mergeTrace({ tags: { 'app-db-before': getAppDb() }});
       interceptor.execute(eventV, interceptors);
-      mergeTrace({ tags: { 'app-db-after': getAppDb() }});
     }
   );
 }

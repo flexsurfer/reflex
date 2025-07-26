@@ -1,5 +1,5 @@
 // Re-export main functionality
-export { initAppDb } from './db';
+export { initAppDb, getAppDb } from './db';
 
 export { regEvent, regEventErrorHandler, defaultErrorHandler } from './events';
 export { regSub, getSubscriptionValue } from './subs';
