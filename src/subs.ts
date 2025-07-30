@@ -42,8 +42,6 @@ export function getOrCreateReaction(subVector: SubVector): Reaction<any> {
         return null as any;
     }
 
-    withTrace({ operation: subVector[0], opType: KIND, tags: { queryV: subVector } }, () => { });
-
     const computeFn = getHandler(KIND, subId) as SubHandler
     // Check if we already have this specific parameterized reaction
     const subVectorKey = JSON.stringify(subVector)
@@ -52,7 +50,8 @@ export function getOrCreateReaction(subVector: SubVector): Reaction<any> {
         mergeTrace({ tags: { 'cached?': true, reaction: existingReaction.getId() } });
         return existingReaction
     }
-    mergeTrace({ tags: { 'cached?': false } });
+
+    withTrace({ operation: subVector[0], opType: 'sub/create', tags: { queryV: subVector } }, () => { });
 
     const params = subVector.length > 1 ? subVector.slice(1) : []
     // Check if this is a computed subscription (has dependencies)
@@ -74,7 +73,6 @@ export function getOrCreateReaction(subVector: SubVector): Reaction<any> {
         },
         depsReactions
     )
-    mergeTrace({ reaction: reaction.getId() });
     reaction.setId(subVectorKey)
     reaction.setSubVector(subVector)
     // Store the reaction by its full vector key
