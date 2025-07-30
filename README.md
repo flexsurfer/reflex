@@ -4,9 +4,7 @@
 
 **re-frame for the JavaScript world**
 
-A reactive, functional state management library that brings the elegance and power of ClojureScript's re-frame to JavaScript and React/RN applications.
-
-> ⚠️ **Development Status**: This library is in active development and not yet ready for production use. Perfect for pet projects, experiments, and learning! The community is warmly invited to contribute to the development and improvement of the library, including optimizations for data comparison at different lifecycle stages.
+A reactive, functional state management library that brings the elegance and power of ClojureScript's re-frame to JavaScript and React/ReactNative applications.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![NPM Version](https://img.shields.io/npm/v/%40flexsurfer%2Freflex)](https://www.npmjs.com/package/@flexsurfer/reflex)
