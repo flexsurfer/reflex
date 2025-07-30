@@ -9,8 +9,7 @@ export function useSubscription<T>(subVector: SubVector, componentName: string =
   useEffect(() => {
     const reaction = getOrCreateReaction(subVector)
     if (!reaction) return
-    reaction.setComponentName(componentName)
-    reaction.watch(setVal)
+    reaction.watch(setVal, componentName)
     return () => {
       reaction.unwatch(setVal)
     }

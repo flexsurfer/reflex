@@ -97,6 +97,18 @@ describe('Reaction', () => {
       reaction.unwatch(callback);
     });
 
+    it('should add and remove watchers with component name', () => {
+      const reaction = Reaction.create(() => 'test');
+      const callback = jest.fn();
+
+      reaction.watch(callback, 'test component');
+      
+      // But forced get should work
+      expect(reaction.getValue()).toBe('test');
+
+      reaction.unwatch(callback);
+    });
+
     it('should call watchers when value changes through markDirty', async () => {
       let value = 1;
       const reaction = Reaction.create(() => value);

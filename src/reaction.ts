@@ -1,6 +1,6 @@
 import isEqual from 'fast-deep-equal'
 import { consoleLog } from './loggers'
-import type { Id, SubVector } from './types'
+import type { Id, SubVector, Watcher } from './types'
 import { withTrace, mergeTrace } from './trace'
 
 export class Reaction<T> {
@@ -8,14 +8,13 @@ export class Reaction<T> {
   private computeFn: (...depValues: any[]) => T
   private deps: Reaction<any>[] | undefined
   private dependents = new Set<Reaction<any>>()
-  private watchers: Array<(v: T) => void> = []
+  private watchers: Array<Watcher<T>> = []
   private dirty = false
   private scheduled = false
   private value: T | undefined = undefined
   private version = 0
   private depsVersions: number[] = []
   private subVector: SubVector | undefined
-  private componentName: string | undefined
 
   constructor(computeFn: (...depValues: any[]) => T, deps?: Reaction<any>[]) {
     this.computeFn = computeFn
@@ -37,10 +36,10 @@ export class Reaction<T> {
     return [this.value as T, this.version]
   }
 
-  watch(callback: (val: T) => void) {
-    const idx = this.watchers.indexOf(callback)
+  watch(callback: (val: T) => void, componentName: string = "react component") {
+    const idx = this.watchers.findIndex(w => w.callback === callback)
     if (idx === -1) {
-      this.watchers.push(callback)
+      this.watchers.push({ callback, componentName })
       if (this.deps) {
         for (const d of this.deps) d.ensureAliveWith(this)
       }
@@ -48,7 +47,7 @@ export class Reaction<T> {
   }
 
   unwatch(fn: (v: T) => void) {
-    const idx = this.watchers.indexOf(fn)
+    const idx = this.watchers.findIndex(w => w.callback === fn)
     if (idx !== -1) {
       this.watchers.splice(idx, 1)
       if (this.watchers.length === 0) {
@@ -120,11 +119,10 @@ export class Reaction<T> {
             withTrace(
               {
                 opType: 'render',
-                operation: this.componentName ?? 'component',
-                tags: this.componentName ? { componentName: this.componentName } : {},
+                operation: w.componentName
               },
               () => {
-                w(this.value as T)
+                w.callback(this.value as T)
               }
             );
           } catch (error) {
@@ -218,10 +216,6 @@ export class Reaction<T> {
 
   get isRoot(): boolean {
     return this.deps === undefined || this.deps.length === 0
-  }
-
-  setComponentName(componentName: string) {
-    this.componentName = componentName
   }
 }
 

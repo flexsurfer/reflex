@@ -48,3 +48,8 @@ export interface Interceptor<T = Record<string, any>> {
 }
 
 export type InterceptorDirection = 'before' | 'after';
+
+export interface Watcher<T> {
+  callback: (v: T) => void
+  componentName: string
+}

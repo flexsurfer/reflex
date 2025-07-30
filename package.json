@@ -1,10 +1,10 @@
 {
   "name": "@flexsurfer/reflex",
-  "version": "0.1.8",
+  "version": "0.1.10",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/flexsurfer/reflex.git"
+    "url": "git+https://github.com/flexsurfer/reflex.git"
   },
   "type": "module",
   "main": "dist/index.cjs",
