@@ -21,7 +21,7 @@ After many years of building applications with re-frame in the ClojureScript wor
 🔄 **Reactive Subscriptions** - UI automatically updates when state changes  
 🌐 **Multi-Platform Support** - With effects separation, it's super easy to support multiple platforms with the same codebase, including web, mobile, and desktop  
 🤖 **AI Friendly** - Reviewing AI-generated changes is easier because all logic is expressed through pure, isolated functions, making each change understandable, verifiable, and deterministic.  
-🛠️ **Integrated DevTools** - Reflex-devtools provides deep visibility into your app’s state, events, and subscriptions in real time, forming a powerful combo with Reflex for effective development and debugging.  
+🛠️ **Integrated DevTools** - [`@flexsurfer/reflex-devtools`](https://github.com/flexsurfer/reflex-devtools) provides deep visibility into your app’s state, events, and subscriptions in real time, forming a powerful combo with Reflex for effective development and debugging.  
 ⚡ **Interceptor Pattern** - Powerful middleware system for cross-cutting concerns  
 🛡️ **Type Safety** - Full TypeScript support with excellent IDE experience  
 🧪 **Testability** - Pure functions make testing straightforward and reliable  
