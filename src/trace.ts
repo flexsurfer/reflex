@@ -1,3 +1,5 @@
+import { consoleLog } from './loggers';
+
 type TraceID = number;
 
 interface TraceOpts {
@@ -50,9 +52,7 @@ export function isTraceEnabled(): boolean {
 
 export function registerTraceCb(key: string, cb: TraceCallback): void {
     if (!traceEnabled) {
-        console.warn(
-            'Tracing is not enabled; call enableTracing() before registering callbacks'
-        );
+        consoleLog('warn', '[reflex] [trace] Tracing is not enabled; call enableTracing() before registering callbacks');
         return;
     }
     traceCbs.set(key, cb);
@@ -72,7 +72,7 @@ function scheduleFlush() {
             try {
                 cb(batch);
             } catch (e) {
-                console.error('Error in trace callback', e);
+                consoleLog('warn', 'Error in trace callback', e);
             }
         }
     }, DEBOUNCE_TIME);

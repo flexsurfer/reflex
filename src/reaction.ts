@@ -167,7 +167,7 @@ export class Reaction<T> {
         operation: this.subVector?.[0] ?? '',
         opType: 'sub/dispose',
         tags: {
-          subVector: this.subVector,
+          queryV: this.subVector,
           reaction: this.id,
         },
       },
