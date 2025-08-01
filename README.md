@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="reflex-logo-300kb.png" alt="Reflex Logo" width="200" />
+  <img src="reflex_logo.jpg" alt="Reflex Logo" width="200" />
 </div>
 
 **re-frame for the JavaScript world**
