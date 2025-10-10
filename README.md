@@ -37,7 +37,6 @@ After many years of building applications with re-frame in the ClojureScript wor
 - Examples
   - [TodoMVC](https://github.com/flexsurfer/reflex/tree/main/examples/todomvc) - Classic todo app implementation showcasing core reflex patterns
   - [Einbürgerungstest](https://github.com/flexsurfer/einburgerungstest/) - German citizenship test app built with reflex ([Live Demo](https://www.ebtest.org/))
-- Best Practices - TBD
 
 ## 🤝 Contributing
 
