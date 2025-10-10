@@ -35,7 +35,7 @@ describe('regEvent', () => {
 
   // Register a default error handler to suppress console errors in tests
   beforeAll(() => {
-    registerHandler('error', 'event-handler', ((original: Error, reFrame: Error & { data: any }) => {
+    registerHandler('error', 'event-handler', ((original: Error, reflex: Error & { data: any }) => {
       // Silent error handler for tests - just re-throw the original error
     }) as any);
   });
@@ -964,9 +964,9 @@ describe('regEvent with cofx', () => {
       await waitForScheduled();
 
       expect(errorHandler).toHaveBeenCalled();
-      const [originalError, reFrameError] = errorHandler.mock.calls[0];
+      const [originalError, reflexError] = errorHandler.mock.calls[0];
       expect(originalError.message).toBe('Global interceptor error');
-      expect(reFrameError.data.interceptor).toBe('faulty-global');
+      expect(reflexError.data.interceptor).toBe('faulty-global');
     });
   });
 });

@@ -38,16 +38,21 @@ export function getInjectCofxInterceptor(id: string, value?: any): Interceptor {
   };
 }
 
+// -- Constants -------------------------------------------------------------
+
+export const NOW = 'now';
+export const RANDOM = 'random';
+
 // -- Builtin CoEffects Handlers ---------------------------------------------
 
 // Handler for now, injects current timestamp
-regCoeffect('now', (coeffects: CoEffects): CoEffects => ({
+regCoeffect(NOW, (coeffects: CoEffects): CoEffects => ({
   ...coeffects,
   now: Date.now()
 }));
 
 // Handler for random, injects a random number
-regCoeffect('random', (coeffects: CoEffects): CoEffects => ({
+regCoeffect(RANDOM, (coeffects: CoEffects): CoEffects => ({
   ...coeffects,
   random: Math.random()
 }));

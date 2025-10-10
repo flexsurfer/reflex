@@ -63,6 +63,11 @@ export const doFxInterceptor: Interceptor = {
   }
 };
 
+// -- Constants ---------------------------------------------------------
+
+export const DISPATCH_LATER = 'dispatch-later';
+export const DISPATCH = 'dispatch';
+
 // -- Built-in Effect Handlers ------------------------------------------
 
 function dispatchLater(effect: DispatchLaterEffect): void {
@@ -79,11 +84,11 @@ function dispatchLater(effect: DispatchLaterEffect): void {
   setTimeout(() => dispatch(eventToDispatch), Math.max(0, ms));
 }
 
-regEffect('dispatch-later', (value: DispatchLaterEffect) => {
+regEffect(DISPATCH_LATER, (value: DispatchLaterEffect) => {
   dispatchLater(value);
 });
 
-regEffect('dispatch', (value: EventVector) => {
+regEffect(DISPATCH, (value: EventVector) => {
   if (!Array.isArray(value)) {
     consoleLog('error', '[reflex] ignoring bad dispatch value. Expected a vector, but got:', value);
     return;

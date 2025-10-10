@@ -161,16 +161,16 @@ export function handle(eventV: EventVector): void {
  * Only one handler can be registered. Registering a new handler clears the existing handler.
  *
  * This handler function has the signature:
- * `(originalError: Error, reFrameError: Error & { data: any }) => void`
+ * `(originalError: Error, reflexError: Error & { data: any }) => void`
  *
  * - `originalError`: A platform-native Error object.
  *    Represents the original error thrown by user code.
  *    This is the error you see when no handler is registered.
  *
- * - `reFrameError`: An Error object with additional data.
+ * - `reflexError`: An Error object with additional data.
  *    Includes the stacktrace of reflex's internal functions,
  *    and extra data about the interceptor process.
- *    Access `reFrameError.data` to get this info.
+ *    Access `reflexError.data` to get this info.
  *
  *    The data includes:
  *    - `interceptor`: the `id` of the throwing interceptor.
@@ -184,11 +184,11 @@ export function regEventErrorHandler(handler: ErrorHandler): void {
 /**
  * Default error handler that logs errors to console
  */
-export function defaultErrorHandler(originalError: Error, reFrameError: Error & { data: any }): void {
+export function defaultErrorHandler(originalError: Error, reflexError: Error & { data: any }): void {
   consoleLog('error', '[reflex] Interceptor Exception:', {
     originalError,
-    reFrameError,
-    data: reFrameError.data
+    reflexError,
+    data: reflexError.data
   });
   
   // Re-throw the original error to maintain normal error propagation

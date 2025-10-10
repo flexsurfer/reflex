@@ -206,11 +206,11 @@ describe('interceptor', () => {
             execute(['test-event'], [faultyInterceptor]);
 
             expect(errorHandler).toHaveBeenCalled();
-            const [originalError, reFrameError] = errorHandler.mock.calls[0];
+            const [originalError, reflexError] = errorHandler.mock.calls[0];
 
             expect(originalError.message).toBe('Test error');
-            expect(reFrameError.message).toBe('Interceptor Exception: Test error');
-            expect(reFrameError.data).toEqual({
+            expect(reflexError.message).toBe('Interceptor Exception: Test error');
+            expect(reflexError.data).toEqual({
                 direction: 'before',
                 interceptor: 'faulty',
                 originalError: originalError,
@@ -245,8 +245,8 @@ describe('interceptor', () => {
             execute(['test-event'], [faultyInterceptor]);
 
             expect(errorHandler).toHaveBeenCalled();
-            const [, reFrameError] = errorHandler.mock.calls[0];
-            expect(reFrameError.data.direction).toBe('after');
+            const [, reflexError] = errorHandler.mock.calls[0];
+            expect(reflexError.data.direction).toBe('after');
         });
 
         it('should create proper initial context', () => {

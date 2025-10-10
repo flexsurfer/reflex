@@ -10,7 +10,7 @@ export type EffectHandler = (value: any) => void;
 
 export type CoEffectHandler<T = Record<string, any>> = (coeffects: CoEffects<T>, value?: any) => CoEffects<T>;
 
-export type ErrorHandler = (originalError: Error, reFrameError: Error & { data: any }) => void;
+export type ErrorHandler = (originalError: Error, reflexError: Error & { data: any }) => void;
 
 export type SubVector = [Id, ...any[]];
 

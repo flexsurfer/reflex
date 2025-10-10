@@ -3,8 +3,8 @@ export { initAppDb, getAppDb } from './db';
 
 export { regEvent, regEventErrorHandler, defaultErrorHandler } from './events';
 export { regSub, getSubscriptionValue } from './subs';
-export { regEffect } from './fx';
-export { regCoeffect } from './cofx';
+export { regEffect, DISPATCH_LATER, DISPATCH } from './fx';
+export { regCoeffect, NOW, RANDOM } from './cofx';
 export { regGlobalInterceptor, getGlobalInterceptors, clearGlobalInterceptors, setDebugEnabled, isDebugEnabled } from './settings';
 export { getHandler, clearHandlers, clearReactions, clearSubs } from './registrar';
 

@@ -106,15 +106,15 @@ function executeInterceptors(ctx: Context): Context {
  */
 export function execute(eventV: EventVector, interceptors: Interceptor[]): Context {
   const ctx = createContext(eventV, interceptors);
-  const errorHandler = getHandler('error', 'event-handler') as ((original: Error, reFrame: Error & { data: any }) => void) | undefined;
+  const errorHandler = getHandler('error', 'event-handler') as ((original: Error, reflex: Error & { data: any }) => void) | undefined;
   if (!errorHandler) {
     return executeInterceptors({ ...ctx, originalException: true });
   }
   try {
     return executeInterceptors(ctx);
   } catch (e: any) {
-    const reFrameError = mergeExData(e, { eventV });
-    errorHandler((e as any).cause || e, reFrameError);
+    const reflexError = mergeExData(e, { eventV });
+    errorHandler((e as any).cause || e, reflexError);
     return ctx; // Return original context if error handler doesn't throw
   }
 }
