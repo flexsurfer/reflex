@@ -1,0 +1,148 @@
+name: CI
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18, 20, 22]
+        react-version: ['16.8.0', '17.0.2', '18.2.0', '19.0.0']
+        exclude:
+          # Exclude React 19 from older Node versions for compatibility
+          - node-version: 18
+            react-version: '19.0.0'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install specific React version
+        run: npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }} @types/react@${{ matrix.react-version }} @types/react-dom@${{ matrix.react-version }}
+        if: matrix.react-version != '19.0.0'
+
+      - name: Install React 19 without types (using built-in types)
+        run: npm install react@19.0.0 react-dom@19.0.0
+        if: matrix.react-version == '19.0.0'
+
+      - name: Build library
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Test TodoMVC example
+        run: |
+          cd examples/todomvc
+          npm ci
+          npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }}
+          npm run build
+        if: matrix.os == 'ubuntu-latest'
+
+  typecheck:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        typescript: ['4.9', '5.0', '5.1', '5.2', '5.3', '5.4']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install specific TypeScript version
+        run: npm install --save-dev typescript@${{ matrix.typescript }}
+
+      - name: Build with TypeScript ${{ matrix.typescript }}
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test:ci
+
+  package-consumption:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build library
+        run: npm run build
+
+      - name: Create test consumer packages
+        run: |
+          # Test ESM consumption
+          mkdir -p test-consumption/esm-consumer
+          cd test-consumption/esm-consumer
+          npm init -y
+          npm install ../../
+          echo 'import { initAppDb, dispatch } from "@flexsurfer/reflex"; console.log("ESM import works");' > test.mjs
+          node test.mjs
+
+          # Test CommonJS consumption
+          cd ../
+          mkdir -p cjs-consumer
+          cd cjs-consumer
+          npm init -y
+          npm install ../../
+          echo 'const { initAppDb, dispatch } = require("@flexsurfer/reflex"); console.log("CommonJS require works");' > test.js
+          node test.js
+
+  publish-dry-run:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build library
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test:ci
+
+      - name: Test package publication
+        run: npm pack --dry-run
+
+      - name: Test TodoMVC example build
+        run: |
+          cd examples/todomvc
+          npm ci
+          npm run build

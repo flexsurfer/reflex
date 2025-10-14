@@ -30,7 +30,9 @@
     "dev": "tsup --watch",
     "test": "jest --passWithNoTests",
     "test:clean": "jest --passWithNoTests --silent",
-    "test:watch": "jest --passWithNoTests --watch"
+    "test:watch": "jest --passWithNoTests --watch",
+    "test:ci": "jest --passWithNoTests --coverage --silent",
+    "prepublishOnly": "npm run test:ci && npm run build"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
