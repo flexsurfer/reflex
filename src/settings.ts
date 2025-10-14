@@ -4,12 +4,10 @@ import { consoleLog } from './loggers';
 // Global store for settings
 interface Store {
   globalInterceptors: Interceptor[];
-  debugEnabled: boolean;
 }
 
 const store: Store = {
-  globalInterceptors: [],
-  debugEnabled: true // Default to true, can be configured via setDebugEnabled
+  globalInterceptors: []
 };
 
 /**
@@ -18,9 +16,6 @@ const store: Store = {
 function replaceGlobalInterceptor(globalInterceptors: Interceptor[],  interceptor: Interceptor): Interceptor[] {
   return globalInterceptors.reduce((ret: Interceptor[], existingInterceptor: Interceptor) => {
     if (interceptor.id === existingInterceptor.id) {
-      if (store.debugEnabled) {
-        consoleLog('warn', '[reflex] replacing duplicate global interceptor id:', interceptor.id);
-      }
       return [...ret, interceptor];
     } else {
       return [...ret, existingInterceptor];
@@ -64,16 +59,3 @@ export function clearGlobalInterceptors(id?: string): void {
   }
 }
 
-/**
- * Enable or disable debug mode
- */
-export function setDebugEnabled(enabled: boolean): void {
-  store.debugEnabled = enabled;
-}
-
-/**
- * Check if debug mode is enabled
- */
-export function isDebugEnabled(): boolean {
-  return store.debugEnabled;
-}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { consoleLog } from './loggers';
 import { clearSubs } from './registrar';
-import { isDebugEnabled } from './settings';
 
 // Hot reload callback management
 type HotReloadCallback = () => void;
@@ -118,10 +117,6 @@ export function setupSubsHotReload(): {
  * Uses a key that changes when subs are hot reloaded to force re-mount
  */
 export function HotReloadWrapper({ children }: { children: React.ReactNode }) {
-  if (isDebugEnabled()) {
-    const key = useHotReloadKey();
-    return React.createElement(React.Fragment, { key }, children);
-  } else {
-    return children;
-  }
+  const key = useHotReloadKey();
+  return React.createElement(React.Fragment, { key }, children);
 } 

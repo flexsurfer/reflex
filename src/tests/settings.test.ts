@@ -1,15 +1,12 @@
-import { 
-  regGlobalInterceptor, 
-  getGlobalInterceptors, 
-  clearGlobalInterceptors, 
-  setDebugEnabled, 
-  isDebugEnabled 
+import {
+  regGlobalInterceptor,
+  getGlobalInterceptors,
+  clearGlobalInterceptors
 } from '../settings';
 import type { Interceptor, Context } from '../types';
 
 beforeEach(() => {
   clearGlobalInterceptors();
-  setDebugEnabled(true);
 });
 
 describe('Global Interceptors', () => {
@@ -58,32 +55,6 @@ describe('Global Interceptors', () => {
       expect(globals[1]).toEqual(interceptor2);
     });
 
-    it('should log warning when replacing duplicate interceptor ID in debug mode', () => {
-      const interceptor1 = createTestInterceptor('test-1');
-      const interceptor1Updated = createTestInterceptor('test-1');
-      
-      setDebugEnabled(true);
-      regGlobalInterceptor(interceptor1);
-      regGlobalInterceptor(interceptor1Updated);
-      
-      expectLogCall(
-        'warn',
-        '[reflex] replacing duplicate global interceptor id:', 
-        'test-1'
-      );
-    });
-
-    it('should not log warning when replacing duplicate interceptor ID with debug disabled', () => {
-      const interceptor1 = createTestInterceptor('test-1');
-      const interceptor1Updated = createTestInterceptor('test-1');
-      
-      setDebugEnabled(false);
-      regGlobalInterceptor(interceptor1);
-      regGlobalInterceptor(interceptor1Updated);
-      
-      const logCalls = getTestLogCalls();
-      expect(logCalls.warn).toHaveLength(0);
-    });
   });
 
   describe('getGlobalInterceptors', () => {
@@ -146,17 +117,4 @@ describe('Global Interceptors', () => {
     });
   });
 
-  describe('debug mode', () => {
-    it('should start with debug enabled by default', () => {
-      expect(isDebugEnabled()).toBe(true);
-    });
-
-    it('should allow setting debug mode', () => {
-      setDebugEnabled(false);
-      expect(isDebugEnabled()).toBe(false);
-      
-      setDebugEnabled(true);
-      expect(isDebugEnabled()).toBe(true);
-    });
-  });
 }); 
