@@ -31,6 +31,9 @@ jobs:
       - name: Build with TypeScript ${{ matrix.typescript }}
         run: npm run build
 
+      - name: Run tests
+        run: npm run test:ci
+
   test-matrix:
     runs-on: ubuntu-latest
     strategy:
