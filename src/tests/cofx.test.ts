@@ -5,6 +5,7 @@ import { initAppDb, getAppDb } from '../db';
 import { clearGlobalInterceptors } from '../settings';
 import type { CoEffects, Context } from '../types';
 import { consoleLog } from '../loggers';
+import { waitForScheduled } from './test-utils';
 
 describe('regCofx - Co-Effects', () => {
     beforeEach(() => {
@@ -28,7 +29,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-db-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify db was injected
             expect(capturedCoeffects).not.toBeNull();
@@ -48,7 +49,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-now-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             const endTime = Date.now();
 
@@ -71,7 +72,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-random-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify random was injected
             expect(capturedCoeffects).not.toBeNull();
@@ -95,7 +96,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-multiple-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify all co-effects were injected
             expect(capturedCoeffects).not.toBeNull();
@@ -128,7 +129,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-custom-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify custom co-effect was injected
             expect(capturedCoeffects).not.toBeNull();
@@ -157,7 +158,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-param-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify parameterized co-effect was injected
             expect(capturedCoeffects).not.toBeNull();
@@ -190,7 +191,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-complex-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify complex co-effect was injected
             expect(capturedCoeffects).not.toBeNull();
@@ -225,7 +226,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-cofx-logic']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify co-effects were used in business logic
             const updatedDb = getAppDb();
@@ -268,7 +269,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-chained-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify all co-effects were chained correctly
             expect(capturedCoeffects).not.toBeNull();
@@ -306,7 +307,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-error-handling']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify error was logged
             expectLogCall('error', '[reflex] Co-effect failed');
@@ -328,7 +329,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-unregistered-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify error was logged
             expectLogCall(
@@ -370,7 +371,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-params-with-cofx', 'param1', { key: 'value' }, 123]);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify co-effects and parameters work together
             expect(capturedCoeffects).not.toBeNull();
@@ -407,7 +408,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-no-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify expensive co-effect was NOT called
             expect(cofxSpy).not.toHaveBeenCalled();
@@ -422,7 +423,7 @@ describe('regCofx - Co-Effects', () => {
             dispatch(['test-with-cofx']);
 
             // Wait for async processing
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await waitForScheduled();
 
             // Verify expensive co-effect WAS called
             expect(cofxSpy).toHaveBeenCalledTimes(1);

@@ -5,16 +5,7 @@ import { initAppDb, getAppDb } from '../db';
 import { registerHandler, getHandler } from '../registrar';
 import { regGlobalInterceptor, clearGlobalInterceptors } from '../settings';
 import type { Interceptor, Context } from '../types';
-
-// Helper to wait for all scheduled callbacks to complete
-const waitForScheduled = async () => {
-  // Wait for multiple event loop cycles to ensure all scheduling mechanisms complete
-  if (typeof (globalThis as any).setImmediate === 'function') {
-    await new Promise(resolve => (globalThis as any).setImmediate(() => resolve(undefined)));
-  }
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await Promise.resolve();
-};
+import { waitForScheduled } from './test-utils';
 
 // Type definitions for testing type-safe event handlers
 interface EventTestState {
@@ -296,7 +287,7 @@ describe('Type-safe Event Handlers', () => {
       dispatch(['increment-counter']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb<EventTestState>();
       expect(db.counter).toBe(1);
@@ -309,7 +300,7 @@ describe('Type-safe Event Handlers', () => {
       });
 
       dispatch(['add-message', 'Hello World']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb<EventTestState>();
       expect(db.messages).toContain('Hello World');
@@ -324,7 +315,7 @@ describe('Type-safe Event Handlers', () => {
       });
 
       dispatch(['update-user', 'John Doe', false]);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb<EventTestState>();
       expect(db.user.name).toBe('John Doe');
@@ -339,14 +330,14 @@ describe('Type-safe Event Handlers', () => {
 
       // Toggle from light to dark
       dispatch(['toggle-theme']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       let db = getAppDb<EventTestState>();
       expect(db.settings.theme).toBe('dark');
 
       // Toggle back to light
       dispatch(['toggle-theme']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       db = getAppDb<EventTestState>();
       expect(db.settings.theme).toBe('light');
@@ -363,7 +354,7 @@ describe('Type-safe Event Handlers', () => {
       });
 
       dispatch(['complex-update', 42, 'Complex User', ['msg1', 'msg2', 'msg3']]);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb<EventTestState>();
       expect(db.user.id).toBe(42);
@@ -472,7 +463,7 @@ describe('regEvent with cofx', () => {
       }, [['now']]);
 
       dispatch(['test-now-cofx']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.timestamp).toBeGreaterThan(0);
@@ -489,7 +480,7 @@ describe('regEvent with cofx', () => {
       }, [['random']]);
 
       dispatch(['test-random-cofx']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.randomValue).toBeGreaterThanOrEqual(0);
@@ -507,7 +498,7 @@ describe('regEvent with cofx', () => {
       });
 
       dispatch(['test-db-cofx']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.counter).toBe(5);
@@ -527,7 +518,7 @@ describe('regEvent with cofx', () => {
       }, [['now'], ['random']]);
 
       dispatch(['test-multiple-cofx']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.timestamp).toBeGreaterThan(0);
@@ -566,7 +557,7 @@ describe('regEvent with cofx', () => {
       }, [['now']], [beforeInterceptor, afterInterceptor]);
 
       dispatch(['test-cofx-with-interceptors']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.timestamp).toBeGreaterThan(0);
@@ -594,7 +585,7 @@ describe('regEvent with cofx', () => {
       }, [testInterceptor]);
 
       dispatch(['test-backward-compat']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.counter).toBe(1);
@@ -608,7 +599,7 @@ describe('regEvent with cofx', () => {
       });
 
       dispatch(['test-handler-only']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.counter).toBe(2);
@@ -623,7 +614,7 @@ describe('regEvent with cofx', () => {
       }, [['now', 'extra', 'invalid']]);
 
       dispatch(['test-invalid-cofx']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify warning was logged
       expectLogCall(
@@ -649,7 +640,7 @@ describe('regEvent with cofx', () => {
       }, [['custom-test']]);
 
       dispatch(['test-custom-cofx']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.messages).toContain('default-custom-value');
@@ -669,7 +660,7 @@ describe('regEvent with cofx', () => {
       }, [['custom-with-value', 'test-input']]);
 
       dispatch(['test-custom-cofx-with-value']);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       const db = getAppDb();
       expect(db.messages).toContain('processed-test-input');
@@ -838,6 +829,8 @@ describe('regEvent with cofx', () => {
       });
 
       dispatch(['test-fx-modification']);
+      await waitForScheduled();
+      // Wait for the dispatched effects to complete
       await waitForScheduled();
 
       const db = getAppDb();

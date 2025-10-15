@@ -3,6 +3,7 @@ import { regEvent } from '../events';
 import { dispatch } from '../router';
 import { initAppDb, getAppDb } from '../db';
 import { consoleLog } from '../loggers';
+import { waitForScheduled } from './test-utils';
 
 describe('regFx - Custom Effects', () => {
   beforeEach(() => {
@@ -28,7 +29,7 @@ describe('regFx - Custom Effects', () => {
 
       expect(customEffectSpy).toHaveBeenCalledTimes(0);
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify the custom effect was called
       expect(customEffectSpy).toHaveBeenCalledWith('Hello from custom effect!');
@@ -59,7 +60,7 @@ describe('regFx - Custom Effects', () => {
       dispatch(['test-multiple-effects']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify all effects were called in order
       expect(logEffectSpy).toHaveBeenCalledTimes(2);
@@ -93,7 +94,7 @@ describe('regFx - Custom Effects', () => {
       dispatch(['test-external-state']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify external state was modified correctly
       expect(externalState.count).toBe(8);
@@ -126,7 +127,7 @@ describe('regFx - Custom Effects', () => {
       dispatch(['test-combined-effects']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify both dbUpdate and custom effects were executed
       const updatedDb = getAppDb();
@@ -164,7 +165,7 @@ describe('regFx - Custom Effects', () => {
       dispatch(['test-error-handling']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify error was logged and other effects still executed
       expectLogCall('error', '[reflex] Custom effect failed');
@@ -184,7 +185,7 @@ describe('regFx - Custom Effects', () => {
       dispatch(['test-unregistered-effect']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify warning was logged
       expectLogCall(
@@ -201,7 +202,7 @@ describe('regFx - Custom Effects', () => {
       dispatch(['test-invalid-effects']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify warning was logged
       expectLogCall(
@@ -390,7 +391,7 @@ describe('regFx - Custom Effects', () => {
       dispatch(['test-no-param']);
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await waitForScheduled();
 
       // Verify the effect was called
       expect(noParamSpy).toHaveBeenCalledTimes(1);

@@ -1,43 +1,6 @@
 import { EventQueue, dispatch } from '../router';
 import type { EventVector } from '../types';
-
-// Helper to wait for all scheduled callbacks to complete
-const waitForScheduled = async () => {
-  // Wait for setImmediate (React Native priority)
-  if (typeof (globalThis as any).setImmediate === 'function') {
-    await new Promise(resolve => (globalThis as any).setImmediate(resolve));
-    return;
-  }
-  
-  // Wait for MessageChannel (Web priority)
-  if (typeof MessageChannel !== 'undefined') {
-    await new Promise(resolve => {
-      const { port1, port2 } = new MessageChannel();
-      port1.onmessage = () => resolve(undefined);
-      port2.postMessage(undefined);
-    });
-    return;
-  }
-  
-  // Wait for setTimeout fallback
-  await new Promise(resolve => setTimeout(resolve, 0));
-};
-
-// Helper to wait for animation frame scheduling
-const waitForAnimationFrame = async () => {
-  if (typeof requestAnimationFrame !== 'undefined') {
-    await new Promise(resolve => requestAnimationFrame(resolve));
-  } else {
-    await new Promise(resolve => setTimeout(resolve, 16));
-  }
-};
-
-// Helper to create events with meta
-const createEventWithMeta = (eventId: string, meta: Record<string, any>): EventVector => {
-  const event = [eventId] as EventVector;
-  (event as any).meta = meta;
-  return event;
-};
+import { waitForScheduled, waitForAnimationFrame, createEventWithMeta } from './test-utils';
 
 describe('EventQueue', () => {
   let calls: EventVector[];

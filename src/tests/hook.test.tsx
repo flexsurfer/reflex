@@ -7,6 +7,7 @@ import { initAppDb } from '../db';
 import { useSubscription } from '../hook';
 import { regEvent } from '../events';
 import { dispatch } from '../router';
+import { waitForEventAndReaction } from './test-utils';
 
 describe('React Hooks', () => {
   // Register test subscriptions
@@ -171,6 +172,9 @@ describe('React Hooks', () => {
         dispatch(['add-todo', 'Learn Simple Reactive System']);
       });
 
+      // Wait for event processing and reaction recomputation
+      await waitForEventAndReaction();
+
       // Wait for the hook to automatically re-render due to subscription changes
       await waitFor(() => {
         expect(result.current.todosCount).toBe(2);
@@ -182,6 +186,9 @@ describe('React Hooks', () => {
       act(() => {
         dispatch(['update-user-name', 'Jane Smith']);
       });
+
+      // Wait for event processing and reaction recomputation
+      await waitForEventAndReaction();
 
       // Wait for the hook to automatically re-render due to subscription changes
       await waitFor(() => {
@@ -222,6 +229,9 @@ describe('React Hooks', () => {
         dispatch(['increment-counter']);
       });
 
+      // Wait for event processing and reaction recomputation
+      await waitForEventAndReaction();
+
       // Wait for the hook to automatically re-render due to subscription changes
       await waitFor(() => {
         expect(result.current.counter).toBe(3);
@@ -231,6 +241,9 @@ describe('React Hooks', () => {
       act(() => {
         dispatch(['set-counter', 10]);
       });
+
+      // Wait for event processing and reaction recomputation
+      await waitForEventAndReaction();
 
       // Wait for the hook to automatically re-render due to subscription changes
       await waitFor(() => {
@@ -242,6 +255,9 @@ describe('React Hooks', () => {
         dispatch(['increment-counter']);
         dispatch(['increment-counter']);
       });
+
+      // Wait for event processing and reaction recomputation
+      await waitForEventAndReaction();
 
       // Wait for the hook to automatically re-render due to subscription changes
       await waitFor(() => {
