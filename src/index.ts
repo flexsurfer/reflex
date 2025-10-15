@@ -1,7 +1,7 @@
 // Re-export main functionality
 export { initAppDb, getAppDb } from './db';
 
-export {original, current} from "immer"
+export { original, current } from './immer-utils';
 
 export { regEvent, regEventErrorHandler, defaultErrorHandler } from './events';
 export { regSub, getSubscriptionValue } from './subs';

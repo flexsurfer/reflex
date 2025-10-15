@@ -9,6 +9,7 @@ import { enablePatches, produceWithPatches } from 'immer';
 import { getAppDb } from './db';
 import {getGlobalInterceptors} from './settings';
 import { mergeTrace, withTrace } from './trace';
+import { IS_DEV } from './env';
 
 const KIND = 'event';
 
@@ -104,6 +105,14 @@ function eventHandlerInterceptor(handler: EventHandler): Interceptor {
           effects = handler({ ...coeffects }, ...params) || [];
         });
 
+      if (IS_DEV) {
+        try {
+          JSON.stringify(effects);
+        } catch (e) {
+          consoleLog('warn', `[reflex] Effects ${effects} contain Proxy (probably an Immer draft). Use current() for draftDb values.`);
+        }
+      }
+      
       context.newDb = newDb;
       context.patches = patches;
 
