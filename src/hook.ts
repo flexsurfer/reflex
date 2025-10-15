@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SubVector } from './types';
+import type { SubVector } from './types';
 import { getOrCreateReaction, getSubscriptionValue } from './subs';
 
 export function useSubscription<T>(subVector: SubVector, componentName: string = 'react component'): T {

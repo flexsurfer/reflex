@@ -1,5 +1,4 @@
 import type { Interceptor } from './types';
-import { consoleLog } from './loggers';
 
 // Global store for settings
 interface Store {

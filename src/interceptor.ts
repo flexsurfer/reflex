@@ -8,7 +8,7 @@ import type {
 
 import { getHandler } from './registrar';
 
-export function isInterceptor<TDb = any>(m: any): m is Interceptor {
+export function isInterceptor(m: any): m is Interceptor {
   if (typeof m !== 'object' || m === null) return false;
   const keys = new Set(Object.keys(m));
   // Must have 'id' field

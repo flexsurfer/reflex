@@ -2,7 +2,6 @@ import type { Db } from './types';
 import { getReaction } from './registrar';
 import { consoleLog } from './loggers';
 import { scheduleAfterRender } from './schedule';
-import { withTrace } from './trace';
 
 let appDb: any = {};
 

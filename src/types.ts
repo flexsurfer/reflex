@@ -1,4 +1,4 @@
-import { Draft } from 'immer';
+import type { Draft } from 'immer';
 
 export type Db<T = Record<string, any>> = T;
 

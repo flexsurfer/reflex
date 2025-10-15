@@ -1,6 +1,6 @@
 import { Reaction } from './reaction'
 import { consoleLog } from './loggers';
-import { SubVector, Id, SubHandler, SubDepsHandler } from './types';
+import type { SubVector, Id, SubHandler, SubDepsHandler } from './types';
 import {
     getReaction,
     setReaction,
