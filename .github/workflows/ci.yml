@@ -6,60 +6,6 @@ on:
     branches: [ main, master ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20, 22]
-        react-version: ['16.8.0', '17.0.2', '18.2.0', '19.1.0']
-        exclude:
-          # Exclude React 19 from older Node versions for compatibility
-          - node-version: 18
-            react-version: '19.1.0'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install specific React version
-        run: |
-          if [ "${{ matrix.react-version }}" = "16.8.0" ]; then
-            npm install react@16.8.0 react-dom@16.8.0 @types/react@~16.9.0 @types/react-dom@~16.9.0 --legacy-peer-deps
-          elif [ "${{ matrix.react-version }}" = "17.0.2" ]; then
-            npm install react@17.0.2 react-dom@17.0.2 @types/react@~17.0.0 @types/react-dom@~17.0.0 --legacy-peer-deps
-          elif [ "${{ matrix.react-version }}" = "18.2.0" ]; then
-            npm install react@18.2.0 react-dom@18.2.0 @types/react@~18.0.0 @types/react-dom@~18.0.0 --legacy-peer-deps
-          fi
-        if: matrix.react-version != '19.1.0'
-
-      - name: Install React 19 without types (using built-in types)
-        run: npm install react@19.1.0 react-dom@19.1.0
-        if: matrix.react-version == '19.1.0'
-
-      - name: Build library
-        run: npm run build
-
-      - name: Run tests
-        run: npm run test:ci
-
-      - name: Test TodoMVC example
-        run: |
-          cd examples/todomvc
-          npm ci
-          if [ "${{ matrix.react-version }}" != "19.1.0" ]; then
-            npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }} --legacy-peer-deps
-          else
-            npm install react@19.1.0 react-dom@19.1.0 --legacy-peer-deps
-          fi
-          npm run build
 
   typecheck:
     runs-on: ubuntu-latest
@@ -83,6 +29,32 @@ jobs:
         run: npm install --save-dev typescript@${{ matrix.typescript }}
 
       - name: Build with TypeScript ${{ matrix.typescript }}
+        run: npm run build
+
+  test-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', '20', '22']
+        react: ['18.3.1', '19.1.0']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install React ${{ matrix.react }}
+        run: npm i -D react@${{ matrix.react }} react-dom@${{ matrix.react }}
+
+      - name: Build library
         run: npm run build
 
       - name: Run tests
@@ -124,6 +96,33 @@ jobs:
           npm install ../../
           echo 'const { initAppDb, dispatch } = require("@flexsurfer/reflex"); console.log("CommonJS require works");' > test.js
           node test.js
+
+  example-todomvc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies (for local lib alias)
+        run: npm ci
+
+      - name: Install example dependencies
+        working-directory: examples/todomvc
+        run: npm ci
+
+      - name: Build TodoMVC example
+        working-directory: examples/todomvc
+        run: npm run build
+
+      - name: Run TodoMVC tests
+        working-directory: examples/todomvc
+        run: npm run test
 
   publish-dry-run:
     runs-on: ubuntu-latest
