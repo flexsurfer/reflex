@@ -11,11 +11,11 @@ jobs:
     strategy:
       matrix:
         node-version: [18, 20, 22]
-        react-version: ['16.8.0', '17.0.2', '18.2.0', '19.0.0']
+        react-version: ['16.8.0', '17.0.2', '18.2.0', '19.1.0']
         exclude:
           # Exclude React 19 from older Node versions for compatibility
           - node-version: 18
-            react-version: '19.0.0'
+            react-version: '19.1.0'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,11 +31,11 @@ jobs:
 
       - name: Install specific React version
         run: npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }} @types/react@${{ matrix.react-version }} @types/react-dom@${{ matrix.react-version }}
-        if: matrix.react-version != '19.0.0'
+        if: matrix.react-version != '19.1.0'
 
       - name: Install React 19 without types (using built-in types)
-        run: npm install react@19.0.0 react-dom@19.0.0
-        if: matrix.react-version == '19.0.0'
+        run: npm install react@19.1.0 react-dom@19.1.0
+        if: matrix.react-version == '19.1.0'
 
       - name: Build library
         run: npm run build
