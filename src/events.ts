@@ -94,15 +94,14 @@ function eventHandlerInterceptor(handler: EventHandler): Interceptor {
   return {
     id: 'fx-handler',
     before(context: Context) {
-      const coeffects = context.coeffects;
-      const event = coeffects.event;
+      const event = context.coeffects.event;
       const params = event.slice(1); // Extract parameters excluding the event ID
 
       let effects: Effects = [];
       const [newDb, patches] = produceWithPatches(getAppDb(),
         (draftDb: Draft<Db>) => {
-          coeffects.draftDb = draftDb;
-          effects = handler({ ...coeffects }, ...params) || [];
+          const coeffectsWithDb = { ...context.coeffects, draftDb };
+          effects = handler(coeffectsWithDb, ...params) || [];
         });
 
       if (IS_DEV) {
