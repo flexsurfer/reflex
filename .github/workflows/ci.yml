@@ -31,8 +31,11 @@ jobs:
       - name: Build with TypeScript ${{ matrix.typescript }}
         run: npm run build
 
-      - name: Run tests
-        run: npm run test:ci
+      - name: Clear Jest cache
+        run: npx jest --clearCache
+
+      - name: Run tests without coverage
+        run: npm run test:clean
 
   test-matrix:
     runs-on: ubuntu-latest
