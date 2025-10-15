@@ -2,6 +2,7 @@ import { regCoeffect, getInjectCofxInterceptor } from '../cofx';
 import { regEvent } from '../events';
 import { dispatch } from '../router';
 import { initAppDb, getAppDb } from '../db';
+import { clearGlobalInterceptors } from '../settings';
 import type { CoEffects, Context } from '../types';
 import { consoleLog } from '../loggers';
 
@@ -9,6 +10,8 @@ describe('regCofx - Co-Effects', () => {
     beforeEach(() => {
         // Initialize a clean database for each test
         initAppDb({ counter: 0, messages: [] });
+        // Clear global interceptors to ensure clean state
+        clearGlobalInterceptors();
         // Test logger is automatically cleared by jest.setup.js
     });
 

@@ -30,7 +30,7 @@ jobs:
         run: npm ci
 
       - name: Install specific React version
-        run: npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }} @types/react@${{ matrix.react-version }} @types/react-dom@${{ matrix.react-version }}
+        run: npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }} @types/react@${{ matrix.react-version }} @types/react-dom@${{ matrix.react-version }} --legacy-peer-deps
         if: matrix.react-version != '19.1.0'
 
       - name: Install React 19 without types (using built-in types)
@@ -47,7 +47,7 @@ jobs:
         run: |
           cd examples/todomvc
           npm ci
-          npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }}
+          npm install react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }} --legacy-peer-deps
           npm run build
 
   typecheck:
