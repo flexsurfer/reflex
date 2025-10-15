@@ -28,6 +28,9 @@ jobs:
       - name: Install specific TypeScript version
         run: npm install --save-dev typescript@${{ matrix.typescript }}
 
+      - name: Reinstall dependencies to ensure proper resolution
+        run: npm ci
+
       - name: Build with TypeScript ${{ matrix.typescript }}
         run: npm run build
 

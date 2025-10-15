@@ -21,7 +21,7 @@ describe('regCofx - Co-Effects', () => {
             let capturedCoeffects: CoEffects | null = null;
 
             // Register an event that captures coeffects
-            regEvent('test-db-cofx', (coeffects) => {
+            regEvent('test-db-cofx', (coeffects: CoEffects) => {
                 capturedCoeffects = coeffects;
             });
 
