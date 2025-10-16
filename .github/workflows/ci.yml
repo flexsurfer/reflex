@@ -178,7 +178,9 @@ jobs:
         run: npm run build
 
       - name: Pack library
-        run: npm pack --filename reflex.tgz
+        run: |
+          npm pack
+          mv flexsurfer-reflex-*.tgz reflex.tgz
 
       - name: Test with ${{ matrix.bundler }}
         run: |
