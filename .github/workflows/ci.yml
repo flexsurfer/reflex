@@ -219,6 +219,7 @@ jobs:
           }
           EOF
             npx vite build
+            test -f dist/bundle.js
 
           elif [ "${{ matrix.bundler }}" = "webpack" ]; then
             npm install --save-dev webpack webpack-cli
@@ -238,6 +239,7 @@ jobs:
           };
           EOF
             npx webpack --mode=production
+            test -f dist/bundle.js
             # Test execution of bundled output
             node dist/bundle.js
 
@@ -257,12 +259,14 @@ jobs:
           };
           EOF
             npx rollup -c
+            test -f dist/bundle.js
             # Test execution of bundled output
             node dist/bundle.js
 
           elif [ "${{ matrix.bundler }}" = "esbuild" ]; then
             npm install --save-dev esbuild
             npx esbuild index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node
+            test -f dist/bundle.js
             # Test execution of bundled output
             node dist/bundle.js
           fi
