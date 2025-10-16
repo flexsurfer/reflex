@@ -205,69 +205,64 @@ jobs:
           EOF
 
           # Configure bundler-specific setup and build
-          case "${{ matrix.bundler }}" in
-            vite)
-              npm install --save-dev vite
-              cat > vite.config.js << 'EOF'
-              export default {
-                build: {
-                  lib: {
-                    entry: 'index.js',
-                    formats: ['es'],
-                    fileName: 'bundle'
-                  }
-                }
+          if [ "${{ matrix.bundler }}" = "vite" ]; then
+            npm install --save-dev vite
+            cat > vite.config.js << 'EOF'
+          export default {
+            build: {
+              lib: {
+                entry: 'index.js',
+                formats: ['es'],
+                fileName: 'bundle'
               }
-              EOF
-              npx vite build
-              ;;
+            }
+          }
+          EOF
+            npx vite build
 
-            webpack)
-              npm install --save-dev webpack webpack-cli
-              cat > webpack.config.js << 'EOF'
-              const path = require('path');
-              module.exports = {
-                entry: './index.js',
-                output: {
-                  filename: 'bundle.js',
-                  path: path.resolve(__dirname, 'dist'),
-                  library: { type: 'commonjs2' }
-                },
-                mode: 'production',
-                resolve: {
-                  extensions: ['.js']
-                }
-              };
-              EOF
-              npx webpack --mode=production
-              # Test execution of bundled output
-              node dist/bundle.js
-              ;;
+          elif [ "${{ matrix.bundler }}" = "webpack" ]; then
+            npm install --save-dev webpack webpack-cli
+            cat > webpack.config.js << 'EOF'
+          const path = require('path');
+          module.exports = {
+            entry: './index.js',
+            output: {
+              filename: 'bundle.js',
+              path: path.resolve(__dirname, 'dist'),
+              library: { type: 'commonjs2' }
+            },
+            mode: 'production',
+            resolve: {
+              extensions: ['.js']
+            }
+          };
+          EOF
+            npx webpack --mode=production
+            # Test execution of bundled output
+            node dist/bundle.js
 
-            rollup)
-              npm install --save-dev rollup @rollup/plugin-node-resolve @rollup/plugin-commonjs
-              cat > rollup.config.js << 'EOF'
-              import { nodeResolve } from '@rollup/plugin-node-resolve';
-              import commonjs from '@rollup/plugin-commonjs';
+          elif [ "${{ matrix.bundler }}" = "rollup" ]; then
+            npm install --save-dev rollup @rollup/plugin-node-resolve @rollup/plugin-commonjs
+            cat > rollup.config.js << 'EOF'
+          import { nodeResolve } from '@rollup/plugin-node-resolve';
+          import commonjs from '@rollup/plugin-commonjs';
 
-              export default {
-                input: 'index.js',
-                output: {
-                  file: 'dist/bundle.js',
-                  format: 'cjs'
-                },
-                plugins: [nodeResolve(), commonjs()]
-              };
-              EOF
-              npx rollup -c
-              # Test execution of bundled output
-              node dist/bundle.js
-              ;;
+          export default {
+            input: 'index.js',
+            output: {
+              file: 'dist/bundle.js',
+              format: 'cjs'
+            },
+            plugins: [nodeResolve(), commonjs()]
+          };
+          EOF
+            npx rollup -c
+            # Test execution of bundled output
+            node dist/bundle.js
 
-            esbuild)
-              npm install --save-dev esbuild
-              npx esbuild index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node
-              # Test execution of bundled output
-              node dist/bundle.js
-              ;;
-          esac
+          elif [ "${{ matrix.bundler }}" = "esbuild" ]; then
+            npm install --save-dev esbuild
+            npx esbuild index.js --bundle --outfile=dist/bundle.js --format=cjs --platform=node
+            # Test execution of bundled output
+            node dist/bundle.js
+          fi
