@@ -219,7 +219,7 @@ jobs:
           }
           EOF
             npx vite build
-            test -f dist/bundle.js
+            test -f dist/bundle.js || test -f dist/bundle.mjs
 
           elif [ "${{ matrix.bundler }}" = "webpack" ]; then
             npm install --save-dev webpack webpack-cli
