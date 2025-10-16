@@ -7,7 +7,7 @@ import { doFxInterceptor } from './fx';
 import type { Draft } from 'immer';
 import { enablePatches, produceWithPatches } from 'immer';
 import { getAppDb } from './db';
-import {getGlobalInterceptors} from './settings';
+import { getGlobalInterceptors } from './settings';
 import { mergeTrace, withTrace } from './trace';
 import { IS_DEV } from './env';
 
@@ -98,7 +98,7 @@ function eventHandlerInterceptor(handler: EventHandler): Interceptor {
       const params = event.slice(1); // Extract parameters excluding the event ID
 
       let effects: Effects = [];
-      const [newDb, patches] = produceWithPatches(getAppDb(),
+      const [newDb, patches, reversePatches] = produceWithPatches(getAppDb(),
         (draftDb: Draft<Db>) => {
           const coeffectsWithDb = { ...context.coeffects, draftDb };
           effects = handler(coeffectsWithDb, ...params) || [];
@@ -115,7 +115,7 @@ function eventHandlerInterceptor(handler: EventHandler): Interceptor {
       context.newDb = newDb;
       context.patches = patches;
 
-      mergeTrace({ tags: { 'patches': patches , 'effects': effects}});
+      mergeTrace({ tags: { 'patches': patches, 'reversePatches': reversePatches, 'effects': effects } });
 
       if (!Array.isArray(effects)) {
         consoleLog('warn', `[reflex] effects expects a vector, but was given ${typeof effects}`);
