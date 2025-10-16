@@ -12,6 +12,7 @@ dist
 dist-ssr
 experiments
 examples/todomvc/node_modules
+coverage
 *.local
 
 # Editor directories and files
