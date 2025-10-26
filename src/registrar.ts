@@ -68,6 +68,10 @@ export function getReaction(key: string): Reaction<any> | undefined {
     return reactionsRegistry.get(key);
 }
 
+export function getReactions(): Map<string, Reaction<any>> | undefined {
+    return reactionsRegistry;
+}
+
 export function setReaction(key: string, reaction: Reaction<any>): void {
     reactionsRegistry.set(key, reaction);
 }

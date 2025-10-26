@@ -82,5 +82,5 @@ export function getOrCreateReaction(subVector: SubVector): Reaction<any> {
 
 export function getSubscriptionValue<T>(subVector: SubVector): T {
     const reaction = getOrCreateReaction(subVector)
-    return reaction ? reaction.getValue() : undefined as T
+    return reaction ? reaction.computeValue() : undefined as T
 }

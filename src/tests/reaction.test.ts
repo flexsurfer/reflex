@@ -10,17 +10,17 @@ describe('Reaction', () => {
       const root = Reaction.create(() => 'hello world');
       
       // Should compute when forced
-      expect(root.getValue()).toBe('hello world');
+      expect(root.computeValue()).toBe('hello world');
       // Should use cache after computation
-      expect(root.getValue()).toBe('hello world');
+      expect(root.computeValue()).toBe('hello world');
     });
 
     it('should create reaction with compute function and dependency', () => {
       const dep = Reaction.create(() => 42);
       const reaction = new Reaction((depValue) => depValue * 2, [dep]);
 
-      expect(reaction.getValue()).toBe(84);
-      expect(reaction.getValue()).toBe(84);
+      expect(reaction.computeValue()).toBe(84);
+      expect(reaction.computeValue()).toBe(84);
     });
 
     it('should create computed reaction with two axdependencies', () => {
@@ -28,7 +28,7 @@ describe('Reaction', () => {
       const b = Reaction.create(() => 10);
       const computed = Reaction.create((x, y) => x + y, [a, b]);
 
-      expect(computed.getValue()).toBe(15);
+      expect(computed.computeValue()).toBe(15);
     });
   });
 
@@ -55,11 +55,11 @@ describe('Reaction', () => {
       });
 
       // Force computation
-      expect(reaction.getValue()).toBe(42);
+      expect(reaction.computeValue()).toBe(42);
       expect(callCount).toBe(1);
 
       // Force again should recompute
-      expect(reaction.getValue()).toBe(42);
+      expect(reaction.computeValue()).toBe(42);
       expect(callCount).toBe(2);
     });
 
@@ -72,14 +72,14 @@ describe('Reaction', () => {
       });
 
       // Force initial computation
-      expect(reaction.getValue()).toBe(10);
+      expect(reaction.computeValue()).toBe(10);
       expect(callCount).toBe(1);
 
       // Change value and mark dirty
       value = 20;
       reaction.markDirty();
 
-      expect(reaction.getValue()).toBe(20);
+      expect(reaction.computeValue()).toBe(20);
       expect(callCount).toBe(2);
     });
   });
@@ -92,7 +92,7 @@ describe('Reaction', () => {
       reaction.watch(callback);
       
       // But forced get should work
-      expect(reaction.getValue()).toBe('test');
+      expect(reaction.computeValue()).toBe('test');
 
       reaction.unwatch(callback);
     });
@@ -104,7 +104,7 @@ describe('Reaction', () => {
       reaction.watch(callback, 'test component');
       
       // But forced get should work
-      expect(reaction.getValue()).toBe('test');
+      expect(reaction.computeValue()).toBe('test');
 
       reaction.unwatch(callback);
     });
@@ -117,7 +117,7 @@ describe('Reaction', () => {
       reaction.watch(callback);
       
       // Force initial computation
-      expect(reaction.getValue()).toBe(1);
+      expect(reaction.computeValue()).toBe(1);
 
       // Change value and mark dirty to trigger watcher
       value = 2;
@@ -140,7 +140,7 @@ describe('Reaction', () => {
       reaction.watch(callback2);
 
       // Force initial computation
-      reaction.getValue();
+      reaction.computeValue();
       expect(callback1).toHaveBeenCalledTimes(0);
       expect(callback2).toHaveBeenCalledTimes(0);
 
@@ -166,7 +166,7 @@ describe('Reaction', () => {
       computed.unwatch(callback);
 
       // Should still work but dispose internally
-      expect(computed.getValue()).toBe('computed: dep');
+      expect(computed.computeValue()).toBe('computed: dep');
     });
   });
 
@@ -176,7 +176,7 @@ describe('Reaction', () => {
       const b = Reaction.create(() => 2);
       const sum = Reaction.create((x, y) => x + y, [a, b]);
 
-      expect(sum.getValue()).toBe(3);
+      expect(sum.computeValue()).toBe(3);
     });
 
     it('should create dependency chain with watchers', async () => {
@@ -189,7 +189,7 @@ describe('Reaction', () => {
       const sumCallback = jest.fn();
 
       sum.watch(sumCallback);
-      expect(sum.getValue()).toBe(3);
+      expect(sum.computeValue()).toBe(3);
 
       // When dependency changes and is marked dirty, dependent should be marked dirty too
       aValue = 5;
@@ -210,7 +210,7 @@ describe('Reaction', () => {
       const topCallback = jest.fn();
       top.watch(topCallback);
 
-      expect(top.getValue()).toBe(12); // (1 * 2) + 10
+      expect(top.computeValue()).toBe(12); // (1 * 2) + 10
 
       // Change base value and mark it dirty
       baseValue = 3;
@@ -218,7 +218,7 @@ describe('Reaction', () => {
 
       await waitForMicrotasks();
       expect(topCallback).toHaveBeenCalledWith(16); // (3 * 2) + 10
-      expect(top.getValue()).toBe(16); 
+      expect(top.computeValue()).toBe(16); 
 
       top.unwatch(topCallback);
     });
@@ -231,7 +231,7 @@ describe('Reaction', () => {
       const callback = jest.fn();
 
       reaction.watch(callback);
-      reaction.getValue(); // Force initial computation
+      reaction.computeValue(); // Force initial computation
 
       value = 2;
       reaction.markDirty();
@@ -270,7 +270,7 @@ describe('Reaction', () => {
       const callback = jest.fn();
 
       reaction.watch(callback);
-      reaction.getValue(); // Force initial computation
+      reaction.computeValue(); // Force initial computation
       expect(computeCount).toBe(1);
       
       // Clear callback history
@@ -300,7 +300,7 @@ describe('Reaction', () => {
 
       // When watching, dependencies should be ensured alive
       computed.watch(callback);
-      expect(computed.getValue()).toBe('computed: dependency');
+      expect(computed.computeValue()).toBe('computed: dependency');
 
       computed.unwatch(callback);
     });
@@ -314,7 +314,7 @@ describe('Reaction', () => {
       const callback = jest.fn();
       level2.watch(callback);
 
-      expect(level2.getValue()).toBe(12); // (1 * 2) + 10
+      expect(level2.computeValue()).toBe(12); // (1 * 2) + 10
 
       // Marking base dirty should propagate through the entire chain
       value = 5;
@@ -338,7 +338,7 @@ describe('Reaction', () => {
 
       // After unwatch, if no more watchers, should dispose
       // We can verify this works by checking the reaction still functions
-      expect(computed.getValue()).toBe('computed: dependency');
+      expect(computed.computeValue()).toBe('computed: dependency');
     });
 
     it('should clean up dependency relationships on disposal', () => {
@@ -349,7 +349,7 @@ describe('Reaction', () => {
 
       const callback = jest.fn();
       d.watch(callback);
-      expect(d.getValue()).toBe(6); // (1 + 2) * 2
+      expect(d.computeValue()).toBe(6); // (1 + 2) * 2
 
       d.unwatch(callback);
       // Dependencies should be cleaned up properly
@@ -366,8 +366,8 @@ describe('Reaction', () => {
       computed1.watch(callback1);
       computed2.watch(callback2);
 
-      expect(computed1.getValue()).toBe('comp1: 1');
-      expect(computed2.getValue()).toBe('comp2: 1');
+      expect(computed1.computeValue()).toBe('comp1: 1');
+      expect(computed2.computeValue()).toBe('comp2: 1');
 
       // Clear the call history from initial computation
       callback1.mockClear();
@@ -396,7 +396,7 @@ describe('Reaction', () => {
       });
 
       // Should compute and return null when forced
-      expect(errorReaction.getValue()).toBeNull();
+      expect(errorReaction.computeValue()).toBeNull();
       expectLogCall('error', '[reflex] Computation error');
     });
 
@@ -411,7 +411,7 @@ describe('Reaction', () => {
       reaction.watch(errorCallback);
       reaction.watch(normalCallback);
       
-      reaction.getValue(); // Force initial computation
+      reaction.computeValue(); // Force initial computation
 
       value = 2;
       reaction.markDirty();
@@ -434,7 +434,7 @@ describe('Reaction', () => {
       const callback = jest.fn();
 
       reaction.watch(callback);
-      expect(reaction.getValue()).toBe(1);
+      expect(reaction.computeValue()).toBe(1);
       
       // Clear any initial calls from the forced computation
       callback.mockClear();
@@ -462,7 +462,7 @@ describe('Reaction', () => {
       const callback = jest.fn();
 
       reaction.watch(callback);
-      expect(reaction.getValue()).toBe(1);
+      expect(reaction.computeValue()).toBe(1);
       expect(computeCount).toBe(1);
       
       // Clear initial calls
@@ -494,7 +494,7 @@ describe('Reaction', () => {
       reaction.watch(callback);
       // Now alive (has watchers)
 
-      expect(reaction.getValue()).toBe('test');
+      expect(reaction.computeValue()).toBe('test');
 
       reaction.unwatch(callback);
       // Should handle disposal if no longer alive
@@ -508,7 +508,7 @@ describe('Reaction', () => {
       reaction.markDirty();
       expect(reaction.isDirty).toBe(true);
 
-      expect(reaction.getValue()).toBe('test');
+      expect(reaction.computeValue()).toBe('test');
       expect(reaction.isDirty).toBe(false);
     });
 
@@ -522,11 +522,11 @@ describe('Reaction', () => {
       expect(computeCount).toBe(0);
 
       // Force get should compute
-      expect(reaction.getValue()).toBe('value');
+      expect(reaction.computeValue()).toBe('value');
       expect(computeCount).toBe(1);
 
       // Force get should recompute
-      expect(reaction.getValue()).toBe('value');
+      expect(reaction.computeValue()).toBe('value');
       expect(computeCount).toBe(2);
     });
   });
@@ -542,7 +542,7 @@ describe('Reaction', () => {
       const callback = jest.fn();
       top.watch(callback);
 
-      expect(top.getValue()).toBe(4); // (1 * 2) + (1 + 1) = 4
+      expect(top.computeValue()).toBe(4); // (1 * 2) + (1 + 1) = 4
 
       baseValue = 3;
       base.markDirty();
@@ -719,7 +719,7 @@ describe('Reaction', () => {
       top.watch(callback);
 
       // Force initial computation - with optimization, each function should be called only once
-      expect(top.getValue()).toBe(4); // (1 * 2) + (1 + 1) = 4
+      expect(top.computeValue()).toBe(4); // (1 * 2) + (1 + 1) = 4
       
       expect(baseCallCount).toBe(1);
       expect(leftCallCount).toBe(1);
@@ -776,7 +776,7 @@ describe('Complex data structures and memoization', () => {
       computed.watch(callback);
       
       // Force initial computation
-      const result1 = computed.getValue();
+      const result1 = computed.computeValue();
       expect(computeFn).toHaveBeenCalledTimes(1);
       expect(dep1computeFn).toHaveBeenCalledTimes(1);
       expect(result1.total).toBe(22); // 1 + 10
@@ -810,7 +810,7 @@ describe('Complex data structures and memoization', () => {
       computed.watch(callback);
       
       // Force initial computation
-      const result1 = computed.getValue();
+      const result1 = computed.computeValue();
       expect(computeFn).toHaveBeenCalledTimes(1);
       expect(result1.sum).toBe(10); // 1 + 2 + 3 + 4
       
@@ -849,7 +849,7 @@ describe('Complex data structures and memoization', () => {
       computed.watch(callback);
       
       // Force initial computation
-      const result1 = computed.getValue();
+      const result1 = computed.computeValue();
       expect(computeFn).toHaveBeenCalledTimes(1);
       expect(result1).toHaveLength(5);
       
@@ -883,7 +883,7 @@ describe('Complex data structures and memoization', () => {
       computed.watch(callback);
       
       // Force initial computation
-      expect(computed.getValue()).toBe(15); // 1 + 2 + 3 + 4 + 5
+      expect(computed.computeValue()).toBe(15); // 1 + 2 + 3 + 4 + 5
       expect(computeFn).toHaveBeenCalledTimes(1);
       
       // Change array element
@@ -941,7 +941,7 @@ describe('Complex data structures and memoization', () => {
       computed.watch(callback);
       
       // Force initial computation
-      const result1 = computed.getValue();
+      const result1 = computed.computeValue();
       expect(computeFn).toHaveBeenCalledTimes(1);
       expect(result1.summary.valueSum).toBe(6);
       expect(result1.summary.tagCount).toBe(2);
@@ -1029,7 +1029,7 @@ describe('Complex data structures and memoization', () => {
       computed.watch(callback);
       
       // Force initial computation
-      const result1 = computed.getValue();
+      const result1 = computed.computeValue();
       expect(computeFn).toHaveBeenCalledTimes(1);
       expect(result1.totalEngagement).toBe(150);
       

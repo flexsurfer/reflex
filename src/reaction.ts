@@ -25,9 +25,13 @@ export class Reaction<T> {
     return new Reaction(fn, deps)
   }
 
-  getValue(): T {
+  computeValue(): T {
     this.ensureDirty()
     this.recomputeIfNeeded(false)
+    return this.value as T
+  }
+
+  getValue(): T {
     return this.value as T
   }
 
@@ -155,9 +159,7 @@ export class Reaction<T> {
 
   private disposeIfUnused() {
     if (this.isAlive) return
-
-    this.value = undefined
-    this.version = 0
+    
     this.depsVersions = []
     this.dirty = false
     this.scheduled = false
