@@ -191,6 +191,10 @@ export class Reaction<T> {
   getId(): Id {
     return this.id
   }
+  
+  getVersion(): number {
+    return this.version
+  }
 
   getSubVector(): SubVector | undefined {
     return this.subVector
@@ -200,16 +204,16 @@ export class Reaction<T> {
     this.subVector = subVector
   }
 
-  private get isAlive(): boolean {
-    return this.hasWatchers || this.hasDependents
-  }
-
-  private get hasWatchers(): boolean {
+  get hasWatchers(): boolean {
     return this.watchers.length > 0
   }
 
-  private get hasDependents(): boolean {
+  get hasDependents(): boolean {
     return this.dependents.size > 0
+  }
+
+  get isAlive(): boolean {
+    return this.hasWatchers || this.hasDependents
   }
 
   get isDirty(): boolean {
