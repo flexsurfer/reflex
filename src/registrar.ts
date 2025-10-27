@@ -20,6 +20,10 @@ export function getHandler<T extends RegistryHandler = RegistryHandler>
     return handler;
 }
 
+export function getHandlers(): Record<Kind, Record<string, RegistryHandler>> {
+    return kindToIdToHandler;
+}
+
 export function registerHandler<T extends RegistryHandler = RegistryHandler>
     (kind: Kind, id: Id, handlerFn: T): T {
     if (kindToIdToHandler[kind][id]) {
@@ -51,10 +55,6 @@ export function clearHandlers(kind?: Kind, id?: string): void {
             consoleLog('warn', `[reflex] can't clear ${kind} handler for ${id}. Handler not found.`);
         }
     }
-}
-
-export function getAllHandlers(): Record<Kind, Record<string, RegistryHandler>> {
-    return JSON.parse(JSON.stringify(kindToIdToHandler));
 }
 
 export function hasHandler(kind: Kind, id: string): boolean {
