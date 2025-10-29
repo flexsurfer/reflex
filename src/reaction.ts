@@ -82,7 +82,7 @@ export class Reaction<T> {
     try {
       let changed = false;
 
-      withTrace({ operation: this.subVector?.[0] ?? '', opType: 'sub/run', tags: { queryV: this.subVector, reaction: this.id }, },
+      withTrace({ operation: this.subVector?.[0] ?? '', opType: 'sub/run', tags: { queryV: this.subVector, reaction: this.id, deps: this.deps?.map(d => d.getId()) ?? [] }, },
         () => {
           if (this.isRoot) {
             changed = true
@@ -123,7 +123,8 @@ export class Reaction<T> {
             withTrace(
               {
                 opType: 'render',
-                operation: w.componentName
+                operation: w.componentName,
+                tags: { reaction: this.id}
               },
               () => {
                 w.callback(this.value as T)
