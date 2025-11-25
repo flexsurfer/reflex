@@ -14,13 +14,17 @@ import { mergeTrace, withTrace } from './trace';
 const KIND = 'sub';
 const KIND_DEPS = 'subDeps';
 
-export function regSub<R>(id: Id, computeFn?: (...values: any[]) => R, depsFn?: (...params: any[]) => SubVector[]): void {
+export function regSub<R>(id: Id, computeFn?: ((...values: any[]) => R) | string, depsFn?: (...params: any[]) => SubVector[]): void {
     if (hasHandler(KIND, id)) {
         consoleLog('warn', `[reflex] Overriding. Subscription '${id}' already registered.`)
     }
     // If only id is provided, use root subscription logic
     if (!computeFn) {
         registerHandler(KIND, id, () => getAppDb()[id])
+        registerHandler(KIND_DEPS, id, () => [])
+    } else if (typeof computeFn === 'string') {
+        // String field subscription - access field directly from appdb
+        registerHandler(KIND, id, () => getAppDb()[computeFn])
         registerHandler(KIND_DEPS, id, () => [])
     } else {
         // Computed subscriptions require depsFn

@@ -13,6 +13,7 @@ describe('React Hooks', () => {
   // Register test subscriptions
   regSub('user');
   regSub('user-name', (user) => user?.name, () => [['user']]);
+  regSub('user-email-str', 'userEmail'); // Test string computeFn - simple field name
   regSub('todos');
   regSub('todos-count', (todos) => (todos || []).length, () => [['todos']]);
 
@@ -23,6 +24,7 @@ describe('React Hooks', () => {
         name: 'John Doe',
         email: 'john@example.com'
       },
+      userEmail: 'john@example.com', // For string-based subscription test
       todos: [
         { id: 1, text: 'Test todo', completed: false }
       ]
@@ -61,6 +63,12 @@ describe('React Hooks', () => {
       const { result } = renderHook(() => useSubscription(['todos-count']));
 
       expect(result.current).toBe(1);
+    });
+
+    it('should return string-based subscription value', () => {
+      const { result } = renderHook(() => useSubscription(['user-email-str']));
+
+      expect(result.current).toBe('john@example.com');
     });
 
     it('should handle subscription with parameters', () => {
