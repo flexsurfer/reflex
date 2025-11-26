@@ -1,4 +1,4 @@
-import type { Id, EventHandler, EffectHandler, CoEffectHandler, Interceptor, ErrorHandler, SubHandler, SubDepsHandler } from './types';
+import type { Id, EventHandler, EffectHandler, CoEffectHandler, Interceptor, ErrorHandler, SubHandler, SubDepsHandler, SubConfig } from './types';
 import { consoleLog } from './loggers';
 import { Reaction } from './reaction';
 
@@ -94,6 +94,7 @@ export function clearSubs(): void {
     clearReactions();
     clearHandlers('sub');
     clearHandlers('subDeps');
+    clearSubConfigs();
 }
 
 // === Interceptor Registry Functions ===
@@ -121,8 +122,34 @@ export function clearInterceptors(eventId?: Id): void {
     }
 }
 
+// === SubConfig Registry Functions ===
+const subConfigRegistry = new Map<Id, SubConfig>();
+
+export function getSubConfig(subId: Id): SubConfig | undefined {
+    return subConfigRegistry.get(subId);
+}
+
+export function setSubConfig(subId: Id, config: SubConfig): void {
+    subConfigRegistry.set(subId, config);
+}
+
+export function hasSubConfig(subId: Id): boolean {
+    return subConfigRegistry.has(subId);
+}
+
+export function clearSubConfigs(): void;
+export function clearSubConfigs(subId: Id): void;
+export function clearSubConfigs(subId?: Id): void {
+    if (subId == null) {
+        subConfigRegistry.clear();
+    } else {
+        subConfigRegistry.delete(subId);
+    }
+}
+
 export function clearAllRegistries(): void {
     clearHandlers();
     clearReactions();
     clearInterceptors();
+    clearSubConfigs();
 }

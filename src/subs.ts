@@ -1,20 +1,23 @@
 import { Reaction } from './reaction'
 import { consoleLog } from './loggers';
-import type { SubVector, Id, SubHandler, SubDepsHandler } from './types';
+import type { SubVector, Id, SubHandler, SubDepsHandler, SubConfig } from './types';
 import {
     getReaction,
     setReaction,
     getHandler,
     registerHandler,
-    hasHandler
+    hasHandler,
+    setSubConfig,
+    getSubConfig
 } from './registrar';
 import { getAppDb } from './db';
 import { mergeTrace, withTrace } from './trace';
+import { getGlobalEqualityCheck } from './settings';
 
 const KIND = 'sub';
 const KIND_DEPS = 'subDeps';
 
-export function regSub<R>(id: Id, computeFn?: ((...values: any[]) => R) | string, depsFn?: (...params: any[]) => SubVector[]): void {
+export function regSub<R>(id: Id, computeFn?: ((...values: any[]) => R) | string, depsFn?: (...params: any[]) => SubVector[], config?: SubConfig): void {
     if (hasHandler(KIND, id)) {
         consoleLog('warn', `[reflex] Overriding. Subscription '${id}' already registered.`)
     }
@@ -35,6 +38,11 @@ export function regSub<R>(id: Id, computeFn?: ((...values: any[]) => R) | string
         // Store computeFn and depsFn separately
         registerHandler(KIND, id, computeFn)
         registerHandler(KIND_DEPS, id, depsFn)
+    }
+
+    // Store config if provided
+    if (config) {
+        setSubConfig(id, config)
     }
 }
 
@@ -66,7 +74,11 @@ export function getOrCreateReaction(subVector: SubVector): Reaction<any> {
         // Recursively resolve dependencies
         return getOrCreateReaction(depVector)
     })
-    
+
+    // Determine equality check: per-subscription config takes precedence over global
+    const subConfig = getSubConfig(subId)
+    const equalityCheck = subConfig?.equalityCheck || getGlobalEqualityCheck()
+
     const reaction = Reaction.create(
         (...depValues) => {
             if (params.length > 0) {
@@ -75,7 +87,8 @@ export function getOrCreateReaction(subVector: SubVector): Reaction<any> {
                 return computeFn(...depValues)
             }
         },
-        depsReactions
+        depsReactions,
+        equalityCheck
     )
     reaction.setId(subVectorKey)
     reaction.setSubVector(subVector)

@@ -1,9 +1,11 @@
 import {
   regGlobalInterceptor,
   getGlobalInterceptors,
-  clearGlobalInterceptors
+  clearGlobalInterceptors,
+  setGlobalEqualityCheck,
+  getGlobalEqualityCheck
 } from '../settings';
-import type { Interceptor, Context } from '../types';
+import type { Interceptor, Context, EqualityCheckFn } from '../types';
 
 beforeEach(() => {
   clearGlobalInterceptors();
@@ -108,12 +110,49 @@ describe('Global Interceptors', () => {
     it('should handle clearing non-existent interceptor ID gracefully', () => {
       const interceptor1 = createTestInterceptor('test-1');
       regGlobalInterceptor(interceptor1);
-      
+
       clearGlobalInterceptors('non-existent');
-      
+
       const globals = getGlobalInterceptors();
       expect(globals).toHaveLength(1);
       expect(globals[0]).toEqual(interceptor1);
+    });
+  });
+
+  describe('Global Equality Check', () => {
+    it('should have default equality check that is isEqual', () => {
+      const defaultCheck = getGlobalEqualityCheck();
+      expect(defaultCheck({a: 1}, {a: 1})).toBe(true);
+      expect(defaultCheck({a: 1}, {a: 2})).toBe(false);
+    });
+
+    it('should allow setting custom equality check', () => {
+      const customEquality: EqualityCheckFn = (a, b) => a === b;
+      setGlobalEqualityCheck(customEquality);
+
+      const currentCheck = getGlobalEqualityCheck();
+      expect(currentCheck).toBe(customEquality);
+      expect(currentCheck(1, 1)).toBe(true);
+      expect(currentCheck(1, 2)).toBe(false);
+      expect(currentCheck({a: 1}, {a: 1})).toBe(false); // Reference equality, not deep equality
+    });
+
+    it('should allow setting always-equal check', () => {
+      const alwaysEqual: EqualityCheckFn = () => true;
+      setGlobalEqualityCheck(alwaysEqual);
+
+      const currentCheck = getGlobalEqualityCheck();
+      expect(currentCheck({a: 1}, {a: 2})).toBe(true);
+      expect(currentCheck('hello', 'world')).toBe(true);
+    });
+
+    it('should allow setting never-equal check', () => {
+      const neverEqual: EqualityCheckFn = () => false;
+      setGlobalEqualityCheck(neverEqual);
+
+      const currentCheck = getGlobalEqualityCheck();
+      expect(currentCheck({a: 1}, {a: 1})).toBe(false);
+      expect(currentCheck('hello', 'hello')).toBe(false);
     });
   });
 

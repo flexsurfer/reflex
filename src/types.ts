@@ -17,6 +17,10 @@ export type SubVector = [Id, ...any[]];
 export type SubHandler = (...values: any[]) => any;
 export type SubDepsHandler = (...params: any[]) => SubVector[];
 
+export interface SubConfig {
+  equalityCheck?: EqualityCheckFn;
+}
+
 export type Effects = [string, any?][];
 
 export interface DispatchLaterEffect {
@@ -53,3 +57,5 @@ export interface Watcher<T> {
   callback: (v: T) => void
   componentName: string
 }
+
+export type EqualityCheckFn = (a: any, b: any) => boolean;

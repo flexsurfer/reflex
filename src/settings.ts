@@ -1,12 +1,15 @@
-import type { Interceptor } from './types';
+import type { Interceptor, EqualityCheckFn } from './types';
+import isEqual from 'fast-deep-equal';
 
 // Global store for settings
 interface Store {
   globalInterceptors: Interceptor[];
+  globalEqualityCheck: EqualityCheckFn;
 }
 
 const store: Store = {
-  globalInterceptors: []
+  globalInterceptors: [],
+  globalEqualityCheck: isEqual
 };
 
 /**
@@ -56,5 +59,19 @@ export function clearGlobalInterceptors(id?: string): void {
   } else {
     store.globalInterceptors = store.globalInterceptors.filter(interceptor => interceptor.id !== id);
   }
+}
+
+/**
+ * Set the global equality check function used for reaction value comparisons
+ */
+export function setGlobalEqualityCheck(equalityCheck: EqualityCheckFn): void {
+  store.globalEqualityCheck = equalityCheck;
+}
+
+/**
+ * Get the current global equality check function
+ */
+export function getGlobalEqualityCheck(): EqualityCheckFn {
+  return store.globalEqualityCheck;
 }
 

@@ -1,5 +1,6 @@
 import { Reaction } from '../reaction';
 import { consoleLog } from '../loggers';
+import type { EqualityCheckFn } from '../types';
 
 // Helper function to wait for microtask queue to flush
 const waitForMicrotasks = () => new Promise<void>(resolve => queueMicrotask(() => resolve()));
@@ -1052,6 +1053,153 @@ describe('Complex data structures and memoization', () => {
         theme: 'light'
       }));
       
+      computed.unwatch(callback);
+    });
+  });
+
+  describe('Custom equality check configuration', () => {
+    // Note: Equality checks are only used for COMPUTED reactions (those with dependencies).
+    // Root reactions always mark changed=true and don't use equality checks.
+
+    it('should use custom equality check for computed reactions', async () => {
+      // Custom equality: only compare the 'id' field, ignoring 'timestamp'
+      const idOnlyEqual: EqualityCheckFn = (a, b) => a?.id === b?.id;
+      let rootValue = { id: 1, timestamp: 100 };
+      const root = Reaction.create(() => rootValue);
+      const computed = Reaction.create((val) => ({ ...val }), [root], idOnlyEqual);
+      const callback = jest.fn();
+
+      computed.watch(callback);
+      expect(computed.computeValue()).toEqual({ id: 1, timestamp: 100 });
+      callback.mockClear();
+
+      // Change timestamp but keep id same - custom equality should consider them equal
+      rootValue = { id: 1, timestamp: 999 };
+      root.markDirty();
+
+      await waitForMicrotasks();
+      // Callback should NOT be called because idOnlyEqual considers them equal (same id)
+      expect(callback).not.toHaveBeenCalled();
+
+      // Now change the id - custom equality should detect the change
+      callback.mockClear();
+      rootValue = { id: 2, timestamp: 999 };
+      root.markDirty();
+
+      await waitForMicrotasks();
+      // Callback SHOULD be called because id changed
+      expect(callback).toHaveBeenCalledWith({ id: 2, timestamp: 999 });
+
+      computed.unwatch(callback);
+    });
+
+    it('should use never-equal check to always trigger changes', async () => {
+      // neverEqual treats all values as different, so watchers should always be notified
+      const neverEqual: EqualityCheckFn = () => false;
+      let rootValue = 1;
+      const root = Reaction.create(() => rootValue);
+      const computed = Reaction.create((val) => val, [root], neverEqual);
+      const callback = jest.fn();
+
+      computed.watch(callback);
+      expect(computed.computeValue()).toBe(1);
+      callback.mockClear();
+
+      // Even with same value, neverEqual should trigger change
+      rootValue = 1; // Same value
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).toHaveBeenCalledWith(1); // Should be called even though value didn't change
+
+      computed.unwatch(callback);
+    });
+
+    it('should use reference equality instead of deep equality', async () => {
+      // Reference equality will detect changes when object reference changes,
+      // even if the content is the same
+      const referenceEqual: EqualityCheckFn = (a, b) => a === b;
+      let rootObj = { count: 1 };
+      const root = Reaction.create(() => rootObj);
+      // Pass through the same object reference
+      const computed = Reaction.create((val) => val, [root], referenceEqual);
+      const callback = jest.fn();
+
+      computed.watch(callback);
+      expect(computed.computeValue()).toEqual({ count: 1 });
+      callback.mockClear();
+
+      // Create new object with same content - reference equality should detect change
+      rootObj = { count: 1 };
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).toHaveBeenCalledWith({ count: 1 }); // Called because reference changed
+
+      computed.unwatch(callback);
+    });
+
+    it('should not trigger change with reference equality when reference is same', async () => {
+      const referenceEqual: EqualityCheckFn = (a, b) => a === b;
+      const obj = { count: 1 };
+      let rootObj = obj;
+      const root = Reaction.create(() => rootObj);
+      const computed = Reaction.create((val) => val, [root], referenceEqual);
+      const callback = jest.fn();
+
+      computed.watch(callback);
+      expect(computed.computeValue()).toEqual({ count: 1 });
+      callback.mockClear();
+
+      // Mutate object but keep same reference
+      obj.count = 999;
+      rootObj = obj; // Same reference
+      root.markDirty();
+
+      await waitForMicrotasks();
+      // Should NOT be called because reference is the same (even though content changed)
+      expect(callback).not.toHaveBeenCalled();
+
+      computed.unwatch(callback);
+    });
+
+    it('should fall back to deep equality when no custom equality provided', async () => {
+      let obj = { count: 1 };
+      const root = Reaction.create(() => obj);
+      const computed = Reaction.create((val) => val, [root]); // No custom equality - uses deep equality
+      const callback = jest.fn();
+
+      computed.watch(callback);
+      expect(computed.computeValue()).toEqual({ count: 1 });
+      callback.mockClear();
+
+      // Create new object with same content - deep equality should NOT detect change
+      obj = { count: 1 };
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).not.toHaveBeenCalled(); // Should not be called due to deep equality
+
+      computed.unwatch(callback);
+    });
+
+    it('should trigger change with deep equality when content differs', async () => {
+      let obj = { count: 1 };
+      const root = Reaction.create(() => obj);
+      const computed = Reaction.create((val) => val, [root]); // No custom equality - uses deep equality
+      const callback = jest.fn();
+
+      computed.watch(callback);
+      expect(computed.computeValue()).toEqual({ count: 1 });
+      callback.mockClear();
+
+      // Create new object with different content
+      obj = { count: 2 };
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).toHaveBeenCalledWith({ count: 2 }); // Should be called due to different content
+
       computed.unwatch(callback);
     });
   });

@@ -1,6 +1,6 @@
 import isEqual from 'fast-deep-equal'
 import { consoleLog } from './loggers'
-import type { Id, SubVector, Watcher } from './types'
+import type { Id, SubVector, Watcher, EqualityCheckFn } from './types'
 import { withTrace, mergeTrace } from './trace'
 
 export class Reaction<T> {
@@ -15,14 +15,16 @@ export class Reaction<T> {
   private version = 0
   private depsVersions: number[] = []
   private subVector: SubVector | undefined
+  private equalityCheck: EqualityCheckFn
 
-  constructor(computeFn: (...depValues: any[]) => T, deps?: Reaction<any>[]) {
+  constructor(computeFn: (...depValues: any[]) => T, deps?: Reaction<any>[], equalityCheck?: EqualityCheckFn) {
     this.computeFn = computeFn
     this.deps = deps
+    this.equalityCheck = equalityCheck || isEqual
   }
 
-  static create<R>(fn: (...values: any[]) => R, deps?: Reaction<any>[]): Reaction<R> {
-    return new Reaction(fn, deps)
+  static create<R>(fn: (...values: any[]) => R, deps?: Reaction<any>[], equalityCheck?: EqualityCheckFn): Reaction<R> {
+    return new Reaction(fn, deps, equalityCheck)
   }
 
   computeValue(): T {
@@ -99,7 +101,7 @@ export class Reaction<T> {
 
             if (this.value === undefined || versionsChanged) {
               let newVal = this.computeFn(...values)
-              changed = !isEqual(newVal, this.value)
+              changed = !this.equalityCheck(newVal, this.value)
               if (changed) {
                 this.value = newVal
               }
