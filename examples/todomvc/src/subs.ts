@@ -3,7 +3,7 @@ import type { Todos, Showing } from './db';
 import { SUB_IDS } from './sub-ids';
 
 // Root subscriptions
-regSub(SUB_IDS.TODOS);
+regSub(SUB_IDS.TODOS, 'todos');
 regSub(SUB_IDS.SHOWING);
 
 // Computed subscriptions

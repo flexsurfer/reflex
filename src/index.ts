@@ -7,7 +7,7 @@ export { regEvent, regEventErrorHandler, defaultErrorHandler } from './events';
 export { regSub, getSubscriptionValue } from './subs';
 export { regEffect, DISPATCH_LATER, DISPATCH } from './fx';
 export { regCoeffect, NOW, RANDOM } from './cofx';
-export { regGlobalInterceptor, getGlobalInterceptors, clearGlobalInterceptors } from './settings';
+export { regGlobalInterceptor, getGlobalInterceptors, clearGlobalInterceptors, setGlobalEqualityCheck, getGlobalEqualityCheck } from './settings';
 export { getHandler, getHandlers, clearHandlers, clearReactions, clearSubs, getReactions } from './registrar';
 
 export { dispatch } from './router';
@@ -40,5 +40,7 @@ export type {
   EffectHandler,
   Context,
   DispatchLaterEffect,
-  ErrorHandler
+  ErrorHandler,
+  SubConfig,
+  EqualityCheckFn
 } from './types';
