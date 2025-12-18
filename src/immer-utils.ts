@@ -3,7 +3,7 @@
  * These check if the value is actually a draft before calling the immer functions
  */
 
-import { isDraft, original as immerOriginal, current as immerCurrent } from 'immer';
+import { isDraft, original as immerOriginal, current as immerCurrent, enableMapSet as immerEnableMapSet } from 'immer';
 
 /**
  * Safe version of immer's original function
@@ -21,4 +21,12 @@ export function original<T>(value: T): T {
  */
 export function current<T>(value: T): T {
   return isDraft(value) ? immerCurrent(value) : value;
+}
+
+/**
+ * Enable Map and Set support in Immer
+ * This allows Immer to handle Map and Set objects properly in drafts
+ */
+export function enableMapSet(): void {
+  immerEnableMapSet();
 }
