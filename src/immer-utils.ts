@@ -6,7 +6,7 @@
 import { isDraft, original as immerOriginal, current as immerCurrent, enableMapSet as immerEnableMapSet } from 'immer';
 import { setGlobalEqualityCheck, getGlobalEqualityCheck } from './settings';
 import isEqual from 'fast-deep-equal';
-import isEqualEs6 from 'fast-deep-equal/es6';
+import isEqualEs6 from 'fast-deep-equal/es6/index.js';
 
 /**
  * Safe version of immer's original function

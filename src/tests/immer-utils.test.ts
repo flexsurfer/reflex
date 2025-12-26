@@ -1,7 +1,7 @@
 import { enableMapSet, original, current } from '../immer-utils';
 import { getGlobalEqualityCheck, setGlobalEqualityCheck } from '../settings';
 import isEqual from 'fast-deep-equal';
-import isEqualEs6 from 'fast-deep-equal/es6';
+import isEqualEs6 from 'fast-deep-equal/es6/index.js';
 
 describe('immer-utils', () => {
     describe('enableMapSet', () => {
