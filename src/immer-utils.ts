@@ -4,6 +4,9 @@
  */
 
 import { isDraft, original as immerOriginal, current as immerCurrent, enableMapSet as immerEnableMapSet } from 'immer';
+import { setGlobalEqualityCheck, getGlobalEqualityCheck } from './settings';
+import isEqual from 'fast-deep-equal';
+import isEqualEs6 from 'fast-deep-equal/es6';
 
 /**
  * Safe version of immer's original function
@@ -26,7 +29,14 @@ export function current<T>(value: T): T {
 /**
  * Enable Map and Set support in Immer
  * This allows Immer to handle Map and Set objects properly in drafts
+ * Also updates the global equality check to use fast-deep-equal/es6 for proper Map/Set comparison,
+ * but only if the current equality check is still the default isEqual
  */
 export function enableMapSet(): void {
   immerEnableMapSet();
+  // Only update the global equality check if it's still the default isEqual
+  // to avoid overriding user-set custom equality checks
+  if (getGlobalEqualityCheck() === isEqual) {
+    setGlobalEqualityCheck(isEqualEs6);
+  }
 }

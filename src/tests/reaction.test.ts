@@ -1057,6 +1057,162 @@ describe('Complex data structures and memoization', () => {
     });
   });
 
+  describe('Map and Set support with enableMapSet', () => {
+    it('should work correctly with Map objects after enableMapSet is called', async () => {
+      const { enableMapSet } = await import('../../src/immer-utils');
+      const { setGlobalEqualityCheck } = await import('../../src/settings');
+      const isEqual = (await import('fast-deep-equal')).default;
+
+      let mapValue = new Map([['key1', 'value1'], ['key2', 'value2']]);
+      const root = Reaction.create(() => mapValue);
+      const computed = Reaction.create((map) => ({
+        size: map.size,
+        keys: Array.from(map.keys()).sort(),
+        values: Array.from(map.values()).sort()
+      }), [root]);
+
+      const callback = jest.fn();
+      computed.watch(callback);
+
+      // Initial computation
+      const result1 = computed.computeValue();
+      expect(result1.size).toBe(2);
+      expect(result1.keys).toEqual(['key1', 'key2']);
+      expect(result1.values).toEqual(['value1', 'value2']);
+      callback.mockClear();
+
+      // Enable MapSet support
+      enableMapSet();
+
+      // Update map with same content - should not trigger change due to equality
+      mapValue = new Map([['key1', 'value1'], ['key2', 'value2']]);
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).not.toHaveBeenCalled(); // Should not trigger due to deep equality
+
+      // Update map with different content - should trigger change
+      mapValue = new Map([['key1', 'value1'], ['key2', 'updated']]);
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).toHaveBeenCalledWith({
+        size: 2,
+        keys: ['key1', 'key2'],
+        values: ['updated', 'value1']
+      });
+
+      computed.unwatch(callback);
+
+      // Reset to default equality check
+      setGlobalEqualityCheck(isEqual);
+    });
+
+    it('should work correctly with Set objects after enableMapSet is called', async () => {
+      const { enableMapSet } = await import('../../src/immer-utils');
+      const { setGlobalEqualityCheck, getGlobalEqualityCheck } = await import('../../src/settings');
+      const isEqual = (await import('fast-deep-equal')).default;
+
+      let setValue = new Set(['a', 'b', 'c']);
+      const root = Reaction.create(() => setValue);
+      const computed = Reaction.create((set) => ({
+        size: set.size,
+        values: Array.from(set).sort()
+      }), [root]);
+
+      const callback = jest.fn();
+      computed.watch(callback);
+
+      // Initial computation
+      const result1 = computed.computeValue();
+      expect(result1.size).toBe(3);
+      expect(result1.values).toEqual(['a', 'b', 'c']);
+      callback.mockClear();
+
+      // Enable MapSet support
+      enableMapSet();
+
+      // Update set with same content - should not trigger change
+      setValue = new Set(['a', 'b', 'c']);
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).not.toHaveBeenCalled(); // Should not trigger due to deep equality
+
+      // Update set with different content - should trigger change
+      setValue = new Set(['a', 'b', 'd']);
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).toHaveBeenCalledWith({
+        size: 3,
+        values: ['a', 'b', 'd']
+      });
+
+      computed.unwatch(callback);
+
+      // Reset to default equality check
+      setGlobalEqualityCheck(isEqual);
+    });
+
+    it('should handle complex nested structures with Maps and Sets', async () => {
+      const { enableMapSet } = await import('../../src/immer-utils');
+      const { setGlobalEqualityCheck, getGlobalEqualityCheck } = await import('../../src/settings');
+      const isEqual = (await import('fast-deep-equal')).default;
+
+      let complexValue = {
+        map: new Map([['users', new Set(['alice', 'bob'])]]),
+        config: { enabled: true }
+      };
+
+      const root = Reaction.create(() => complexValue);
+      const computed = Reaction.create((obj) => ({
+        userCount: obj.map.get('users')?.size || 0,
+        enabled: obj.config.enabled
+      }), [root]);
+
+      const callback = jest.fn();
+      computed.watch(callback);
+
+      // Initial computation
+      const result1 = computed.computeValue();
+      expect(result1.userCount).toBe(2);
+      expect(result1.enabled).toBe(true);
+      callback.mockClear();
+
+      // Enable MapSet support
+      enableMapSet();
+
+      // Update with structurally identical object - should not trigger change
+      complexValue = {
+        map: new Map([['users', new Set(['alice', 'bob'])]]),
+        config: { enabled: true }
+      };
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).not.toHaveBeenCalled();
+
+      // Update with different Map content - should trigger change
+      complexValue = {
+        map: new Map([['users', new Set(['alice', 'bob', 'charlie'])]]),
+        config: { enabled: true }
+      };
+      root.markDirty();
+
+      await waitForMicrotasks();
+      expect(callback).toHaveBeenCalledWith({
+        userCount: 3,
+        enabled: true
+      });
+
+      computed.unwatch(callback);
+
+      // Reset to default equality check
+      setGlobalEqualityCheck(isEqual);
+    });
+  });
+
   describe('Custom equality check configuration', () => {
     // Note: Equality checks are only used for COMPUTED reactions (those with dependencies).
     // Root reactions always mark changed=true and don't use equality checks.
