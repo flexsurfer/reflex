@@ -71,6 +71,33 @@ describe('React Hooks', () => {
       expect(result.current).toBe('john@example.com');
     });
 
+    it('should update string-based root subscription when source field changes', async () => {
+      const { result } = renderHook(() => useSubscription(['user-email-str']));
+
+      expect(result.current).toBe('john@example.com');
+
+      regEvent('set-user-email', ({ draftDb }, email) => {
+        draftDb.userEmail = email;
+      });
+
+      act(() => {
+        dispatch(['set-user-email', 'jane@example.com']);
+      });
+
+      await waitFor(() => {
+        expect(result.current).toBe('jane@example.com');
+      });
+    });
+
+    it('should reject duplicate root-key registration with different sub ids', () => {
+      regSub('user-email-str-duplicate', 'userEmail');
+
+      expectLogCall(
+        'error',
+        "[reflex] Subscription with id 'user-email-str-duplicate' will be overridden. Root key 'userEmail' is already used by subscription 'user-email-str'."
+      );
+    });
+
     it('should handle subscription with parameters', () => {
       // Register a parameterized subscription
       regSub('todo-by-id', (todos, id) => {

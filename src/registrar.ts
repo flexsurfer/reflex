@@ -42,12 +42,16 @@ export function clearHandlers(kind?: Kind, id?: string): void {
         for (const k in kindToIdToHandler) {
             kindToIdToHandler[k as Kind] = {};
         }
+        clearRootSubSources();
     } else if (id == null) {
         if (!(kind in kindToIdToHandler)) {
             consoleLog('error', `[reflex] Unknown kind: ${kind}`);
             return;
         }
         kindToIdToHandler[kind] = {};
+        if (kind === 'sub') {
+            clearRootSubSources();
+        }
     } else {
         if (kindToIdToHandler[kind][id]) {
             delete kindToIdToHandler[kind][id];
@@ -88,6 +92,21 @@ export function clearReactions(id?: string): void {
     } else {
         reactionsRegistry.delete(id);
     }
+}
+
+// === Root Subscription Source Registry Functions ===
+const rootSubIdBySource = new Map<string, Id>();
+
+export function setRootSubSource(subId: Id, sourceKey: string): void {
+    rootSubIdBySource.set(sourceKey, subId);
+}
+
+export function getRootSubIdBySource(sourceKey: string): Id | undefined {
+    return rootSubIdBySource.get(sourceKey);
+}
+
+export function clearRootSubSources(): void {
+    rootSubIdBySource.clear();
 }
 
 export function clearSubs(): void {

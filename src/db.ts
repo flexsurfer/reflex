@@ -1,5 +1,5 @@
 import type { Db } from './types';
-import { getReaction } from './registrar';
+import { getReaction, getRootSubIdBySource } from './registrar';
 import { consoleLog } from './loggers';
 import { scheduleAfterRender } from './schedule';
 
@@ -30,7 +30,16 @@ export function updateAppDbWithPatches<T = Record<string, any>>(newDb: Db<T>, pa
       const pathSegments = patch.path;
       if (pathSegments.length > 0) {
         const rootKey = pathSegments[0] as string;
-        const subVectorKey = JSON.stringify([rootKey])
+        if (typeof rootKey !== 'string') {
+          continue;
+        }
+
+        const subId = getRootSubIdBySource(rootKey);
+        if (!subId) {
+          continue;
+        }
+
+        const subVectorKey = JSON.stringify([subId])
         const reaction = getReaction(subVectorKey);
         if (reaction) {
           if (!reaction.isRoot) {

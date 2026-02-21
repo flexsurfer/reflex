@@ -8,7 +8,9 @@ import {
     registerHandler,
     hasHandler,
     setSubConfig,
-    getSubConfig
+    getSubConfig,
+    setRootSubSource,
+    getRootSubIdBySource
 } from './registrar';
 import { getAppDb } from './db';
 import { mergeTrace, withTrace } from './trace';
@@ -17,18 +19,26 @@ import { getGlobalEqualityCheck } from './settings';
 const KIND = 'sub';
 const KIND_DEPS = 'subDeps';
 
+function registerRootSub (id: Id, sourceKey: string) {
+    const conflictingSubId = getRootSubIdBySource(sourceKey)
+    if (conflictingSubId && conflictingSubId !== id) {
+        consoleLog('error', `[reflex] Subscription with id '${id}' will be overridden. Root key '${sourceKey}' is already used by subscription '${conflictingSubId}'.`)
+    }
+
+    setRootSubSource(id, sourceKey)
+    registerHandler(KIND, id, () => getAppDb()[sourceKey])
+    registerHandler(KIND_DEPS, id, () => [])
+}
+
 export function regSub<R>(id: Id, computeFn?: ((...values: any[]) => R) | string, depsFn?: (...params: any[]) => SubVector[], config?: SubConfig): void {
     if (hasHandler(KIND, id)) {
         consoleLog('warn', `[reflex] Overriding. Subscription '${id}' already registered.`)
     }
-    // If only id is provided, use root subscription logic
+
     if (!computeFn) {
-        registerHandler(KIND, id, () => getAppDb()[id])
-        registerHandler(KIND_DEPS, id, () => [])
+        registerRootSub(id, id)
     } else if (typeof computeFn === 'string') {
-        // String field subscription - access field directly from appdb
-        registerHandler(KIND, id, () => getAppDb()[computeFn])
-        registerHandler(KIND_DEPS, id, () => [])
+        registerRootSub(id, computeFn as string)
     } else {
         // Computed subscriptions require depsFn
         if (!depsFn) {
