@@ -32,11 +32,39 @@ After many years of building applications with re-frame in the ClojureScript wor
 - [Step-by-Step Tutorial](https://reflex.js.org/docs/quick-start.html)
 - [Best Practices](https://reflex.js.org/docs/api-reference.html)
 - [API Reference](https://reflex.js.org/docs/best-practices.html)
+- [AI Context (llms.txt)](./llms.txt) - Compact guide for AI-assisted Reflex project scaffolding and state architecture
 - [re-frame Documentation](https://day8.github.io/re-frame/re-frame/) - The original and comprehensive guide to understanding the philosophy and patterns
 
 - Examples
   - [TodoMVC](https://github.com/flexsurfer/reflex/tree/main/examples/todomvc) - Classic todo app implementation showcasing core reflex patterns
-  - [Einbürgerungstest](https://github.com/flexsurfer/einburgerungstest/) - German citizenship test app built with reflex ([Live Demo](https://www.ebtest.org/))
+  - [Einbürgerungstest](https://github.com/flexsurfer/einburgerungstest/) - Cross-platform web/mobile app built with reflex ([Live Demo](https://www.ebtest.org/))
+  - [StarRupture Planner](https://github.com/flexsurfer/starrupture-planner) - Production planning tool built with reflex ([Live Demo](https://www.starrupture-planner.com/))
+
+## 🤖 Using with AI Assistants
+
+Reflex ships an [`llms.txt`](./llms.txt) file — a compact, AI-readable guide covering state architecture, event/effect/subscription patterns, and code generation rules. Point your AI tool at it so it generates idiomatic Reflex code from the start.
+
+**Claude Code** — add to `CLAUDE.md` in your project root:
+```bash
+curl -o CLAUDE.md https://raw.githubusercontent.com/flexsurfer/reflex/main/llms.txt
+```
+
+**Codex (OpenAI)** — add to `AGENTS.md` in your project root:
+```bash
+curl -o AGENTS.md https://raw.githubusercontent.com/flexsurfer/reflex/main/llms.txt
+```
+Codex reads project instructions from `AGENTS.md`, so this gives it Reflex-specific architecture and code generation rules for your repo.
+
+**Cursor** — create `.cursor/rules/reflex.mdc` and paste the contents, or reference via project rules.
+
+**GitHub Copilot** — add to `.github/copilot-instructions.md`:
+```bash
+curl -o .github/copilot-instructions.md https://raw.githubusercontent.com/flexsurfer/reflex/main/llms.txt
+```
+
+**ChatGPT / Claude.ai Projects** — upload `llms.txt` from your `node_modules/@flexsurfer/reflex/` as a project file, or paste the raw URL into the conversation.
+
+The file is also included in the npm package, so after installing Reflex you can find it at `node_modules/@flexsurfer/reflex/llms.txt`.
 
 ## 🤝 Contributing
 
