@@ -37,6 +37,7 @@ After many years of building applications with re-frame in the ClojureScript wor
 
 - Examples
   - [TodoMVC](https://github.com/flexsurfer/reflex/tree/main/examples/todomvc) - Classic todo app implementation showcasing core reflex patterns
+  - [Issue Triage Board](https://github.com/flexsurfer/reflex-demo) - Demo app built with reflex architecture rules ([Live Video](https://www.youtube.com/watch?v=xwv5SwlF4Dg))
   - [Einbürgerungstest](https://github.com/flexsurfer/einburgerungstest/) - Cross-platform web/mobile app built with reflex ([Live Demo](https://www.ebtest.org/))
   - [StarRupture Planner](https://github.com/flexsurfer/starrupture-planner) - Production planning tool built with reflex ([Live Demo](https://www.starrupture-planner.com/))
 
