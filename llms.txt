@@ -99,30 +99,15 @@ npm i -D @flexsurfer/reflex-devtools
 Enable in your app entry point (`main.tsx`) before dispatching any events:
 
 ```ts
-import { dispatch, enableTracing } from '@flexsurfer/reflex';
+import { enableTracing } from '@flexsurfer/reflex';
 import { enableDevtools } from '@flexsurfer/reflex-devtools';
 
 enableTracing();   // required — turns on the trace pipeline that devtools reads
 enableDevtools();  // opens the devtools connection
 
-dispatch([EVENT_IDS.APP_INIT]);
 ```
 
-`enableTracing()` activates internal trace collection for events, subscriptions, and renders. `enableDevtools()` hooks into those traces and exposes them to the devtools UI / MCP server. Both calls are cheap no-ops in production when tree-shaken behind a `process.env.NODE_ENV` guard.
-
-If your app uses Vite with local source aliases (monorepo / examples), make sure reflex-devtools resolves the same Reflex instance:
-
-```ts
-// vite.config.ts
-resolve: {
-  alias: {
-    '@flexsurfer/reflex': path.resolve(__dirname, '../../src')
-  }
-},
-optimizeDeps: {
-  exclude: ['@flexsurfer/reflex-devtools']
-}
-```
+this code should be run only in dev env.
 
 ## 8) Test Minimum
 
@@ -175,23 +160,12 @@ it('ADD_TODO should ignore empty input', () => {
 ```
 
 ### Testing Subscriptions
-
-Root subscriptions: call `initAppDb(mockDB)` then call `handler()` with no arguments.
 Computed subscriptions: call `handler(inputFromParentSub1, inputFromParentSub2, ...)` directly — the handler receives its parent subscription values as positional arguments.
-Dependency checks: use `getHandler('subDeps', SUB_ID)` to verify the subscription's input signals.
 
 ```ts
 import { getHandler, initAppDb } from '@flexsurfer/reflex';
 import type { SubHandler, SubDepsHandler } from '@flexsurfer/reflex';
 import './subs';
-
-it('TODOS root sub returns todos from db', () => {
-  const handler = getHandler('sub', SUB_IDS.TODOS) as SubHandler;
-  const mockDB = { todos: [{ id: 1, title: 'Test', done: false }] };
-  initAppDb(mockDB);
-
-  expect(handler()).toBe(mockDB.todos);
-});
 
 it('OPEN_COUNT computed sub counts active todos', () => {
   const handler = getHandler('sub', SUB_IDS.TODOS_OPEN_COUNT) as SubHandler;
@@ -202,11 +176,6 @@ it('OPEN_COUNT computed sub counts active todos', () => {
   ];
 
   expect(handler(todos)).toBe(2);
-});
-
-it('OPEN_COUNT has correct dependency chain', () => {
-  const depsHandler = getHandler('subDeps', SUB_IDS.TODOS_OPEN_COUNT) as SubDepsHandler;
-  expect(depsHandler()).toEqual([[SUB_IDS.TODOS]]);
 });
 ```
 
