@@ -16,6 +16,9 @@ export class Reaction<T> {
   private depsVersions: number[] = []
   private subVector: SubVector | undefined
   private equalityCheck: EqualityCheckFn
+  private onDispose?: () => void
+  private onRevive?: () => void
+  private resolveDeps?: () => Reaction<any>[]
 
   constructor(computeFn: (...depValues: any[]) => T, deps?: Reaction<any>[], equalityCheck?: EqualityCheckFn) {
     this.computeFn = computeFn
@@ -42,14 +45,90 @@ export class Reaction<T> {
     return [this.value as T, this.version]
   }
 
+  /**
+   * Read the current value with external-store snapshot semantics:
+   * while the reaction is alive its cached value only advances together
+   * with watcher notifications (required by useSyncExternalStore to avoid
+   * tearing); while not alive markDirty propagation doesn't reach it, so
+   * validate freshness against the dependency chain before returning.
+   */
+  getSnapshot(): T {
+    if (!this.isAlive || this.value === undefined) {
+      this.refreshIfStale()
+    }
+    return this.value as T
+  }
+
+  /**
+   * Bring the cached value up to date only if something underneath actually
+   * changed, without recomputing a chain that is already fresh. Roots verify
+   * with a cheap identity check against their source; computed reactions
+   * compare dependency versions.
+   */
+  refreshIfStale(): void {
+    if (this.isRoot) {
+      if (!this.dirty && this.value !== undefined && Object.is(this.computeFn(), this.value)) {
+        return
+      }
+      this.dirty = true
+      this.recomputeIfNeeded(false)
+      return
+    }
+
+    if (this.deps) {
+      for (const d of this.deps) d.refreshIfStale()
+    }
+    const currentVersions = this.deps?.map(d => d.getVersion()) ?? []
+    if (this.dirty || this.value === undefined || !isEqual(currentVersions, this.depsVersions)) {
+      this.dirty = true
+      this.recomputeIfNeeded(false)
+    }
+  }
+
   watch(callback: (val: T) => void, componentName: string = "react component") {
     const idx = this.watchers.findIndex(w => w.callback === callback)
     if (idx === -1) {
+      const wasAlive = this.isAlive
       this.watchers.push({ callback, componentName })
+      if (!wasAlive) {
+        this.goLive()
+      }
       if (this.deps) {
         for (const d of this.deps) d.ensureAliveWith(this)
       }
+      if (!wasAlive && this.value !== undefined) {
+        // The reaction was not receiving markDirty propagation until now, so
+        // its cached value may predate events dispatched since it was last
+        // read (e.g. between a component's render and its subscription).
+        // Refresh so the post-subscribe snapshot check sees current data.
+        // Never-computed reactions stay lazy: the first read computes anyway.
+        this.refreshIfStale()
+      }
     }
+  }
+
+  /**
+   * Called on the not-alive -> alive transition. Dependencies cached from
+   * creation time may have been disposed and replaced in the registry while
+   * this reaction was dormant; re-resolve them so live reactions always link
+   * to the registered instances (the only ones the db wake-up path can find),
+   * and re-register this reaction itself.
+   */
+  private goLive() {
+    if (this.resolveDeps && !this.isRoot) {
+      const newDeps = this.resolveDeps()
+      const changed = !this.deps
+        || newDeps.length !== this.deps.length
+        || newDeps.some((d, i) => d !== this.deps![i])
+      if (changed) {
+        this.deps = newDeps
+        // Fresh dep instances restart version counters; invalidate recorded
+        // versions so the next refresh recomputes instead of trusting a
+        // coincidental version match against different objects.
+        this.depsVersions = []
+      }
+    }
+    this.onRevive?.()
   }
 
   unwatch(fn: (v: T) => void) {
@@ -151,10 +230,14 @@ export class Reaction<T> {
   }
 
   private ensureAliveWith(child: Reaction<any>) {
+    const wasAlive = this.isAlive
     if (this.value === undefined) {
       this.dirty = true
     }
     this.dependents.add(child)
+    if (!wasAlive) {
+      this.goLive()
+    }
     if (this.deps) {
       for (const d of this.deps) d.ensureAliveWith(this)
     }
@@ -185,6 +268,20 @@ export class Reaction<T> {
         }
       }
     );
+
+    this.onDispose?.()
+  }
+
+  setOnDispose(callback: () => void) {
+    this.onDispose = callback
+  }
+
+  setOnRevive(callback: () => void) {
+    this.onRevive = callback
+  }
+
+  setDepsResolver(resolver: () => Reaction<any>[]) {
+    this.resolveDeps = resolver
   }
 
   setId(id: Id) {

@@ -668,18 +668,29 @@ describe('Reaction', () => {
       expect(baseCallCount).toBe(0); // No computation should occur
       expect(dependentCallCount).toBe(0);
 
-      // Add two watchers back
+      // Add two watchers back - re-watching a stale reaction catches up
+      // on the change it missed while unwatched (baseValue 4), once,
+      // without notifying the new watchers
       const callback3 = jest.fn();
       const callback4 = jest.fn();
       dependent.watch(callback3);
       dependent.watch(callback4);
+
+      expect(baseCallCount).toBe(1); // catch-up recompute on first watch
+      expect(dependentCallCount).toBe(1);
+      expect(callback3).not.toHaveBeenCalled();
+      expect(callback4).not.toHaveBeenCalled();
+      expect(dependent.getSnapshot()).toBe(8); // 4 * 2 - refreshed on watch
+
+      baseCallCount = 0;
+      dependentCallCount = 0;
 
       // Trigger root - both should be handled
       baseValue = 5;
       base.markDirty();
 
       await waitForMicrotasks();
-      expect(callback3).toHaveBeenCalledWith(10); // 5 * 2  
+      expect(callback3).toHaveBeenCalledWith(10); // 5 * 2
       expect(callback4).toHaveBeenCalledWith(10); // 5 * 2
       expect(baseCallCount).toBe(1);
       expect(dependentCallCount).toBe(1);
@@ -1358,5 +1369,93 @@ describe('Complex data structures and memoization', () => {
 
       computed.unwatch(callback);
     });
+  });
+});
+
+describe('Snapshot semantics (useSyncExternalStore contract)', () => {
+  it('watch() should refresh a stale cached value when the reaction becomes alive', () => {
+    let source = 1;
+    const root = Reaction.create(() => source);
+    const child = Reaction.create((v: number) => v * 10, [root]);
+
+    // Render-time read (component not subscribed yet)
+    expect(child.computeValue()).toBe(10);
+
+    // An event lands between render and subscribe: the root is marked dirty,
+    // but the child is not linked as a dependent yet so nothing reaches it
+    source = 2;
+    root.markDirty();
+
+    child.watch(() => { });
+
+    // Subscribe-time snapshot must see the current data, not the stale cache
+    expect(child.getSnapshot()).toBe(20);
+
+    child.unwatch(() => { });
+  });
+
+  it('watch() should not recompute a chain that is already fresh', () => {
+    let computeCount = 0;
+    const root = Reaction.create(() => 42);
+    const child = Reaction.create((v: number) => {
+      computeCount++;
+      return v * 2;
+    }, [root]);
+
+    expect(child.computeValue()).toBe(84);
+    expect(computeCount).toBe(1);
+
+    child.watch(() => { });
+
+    // Nothing changed underneath: becoming alive must not recompute
+    expect(computeCount).toBe(1);
+    expect(child.getSnapshot()).toBe(84);
+  });
+
+  it('getSnapshot() should return the cached value while alive, advancing only with notifications', async () => {
+    let source = 1;
+    let computeCount = 0;
+    const root = Reaction.create(() => source);
+    const child = Reaction.create((v: number) => {
+      computeCount++;
+      return v * 10;
+    }, [root]);
+
+    const seen: number[] = [];
+    child.watch((v) => seen.push(v as number));
+
+    expect(child.getSnapshot()).toBe(10);
+    const computesAfterFirstRead = computeCount;
+
+    // Repeated snapshot reads while alive must be cache hits
+    child.getSnapshot();
+    child.getSnapshot();
+    expect(computeCount).toBe(computesAfterFirstRead);
+
+    // While a recompute is pending (dirty, notification not yet delivered),
+    // the snapshot must still serve the previous consistent value
+    source = 2;
+    root.markDirty();
+    expect(child.getSnapshot()).toBe(10);
+
+    await waitForMicrotasks();
+
+    // After the notification the snapshot advances
+    expect(seen).toContain(20);
+    expect(child.getSnapshot()).toBe(20);
+  });
+
+  it('getSnapshot() should validate freshness for unwatched reactions', () => {
+    let source = 1;
+    const root = Reaction.create(() => source);
+    const child = Reaction.create((v: number) => v * 10, [root]);
+
+    expect(child.getSnapshot()).toBe(10);
+
+    // Data changes while nothing watches: an unwatched snapshot read
+    // cannot trust the cache and must catch up
+    source = 2;
+    root.markDirty();
+    expect(child.getSnapshot()).toBe(20);
   });
 }); 

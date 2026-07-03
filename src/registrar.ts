@@ -1,6 +1,7 @@
 import type { Id, EventHandler, EffectHandler, CoEffectHandler, Interceptor, ErrorHandler, SubHandler, SubDepsHandler, SubConfig } from './types';
 import { consoleLog } from './loggers';
 import { Reaction } from './reaction';
+import { scheduleAfterRender } from './schedule';
 
 type Kind = 'event' | 'fx' | 'cofx' | 'sub' | 'subDeps' | 'error';
 type RegistryHandler = EventHandler | EffectHandler | CoEffectHandler | ErrorHandler | SubHandler | SubDepsHandler;
@@ -89,8 +90,60 @@ export function clearReactions(id: string): void
 export function clearReactions(id?: string): void {
     if (id == null) {
         reactionsRegistry.clear();
+        provisionalCurrent.clear();
+        provisionalPrevious.clear();
     } else {
         reactionsRegistry.delete(id);
+        provisionalCurrent.delete(id);
+        provisionalPrevious.delete(id);
+    }
+}
+
+// === Provisional Reactions ===
+// Reactions are created lazily during render (getSnapshot), but a render may
+// never commit (concurrent rendering, StrictMode, Suspense). Entries that
+// were never watched or depended on cannot be disposed through the normal
+// unwatch path, so they are tracked here and swept after surviving one full
+// sweep cycle without going live. The sweep schedules itself from
+// markProvisionalReaction, independent of db updates, so entries created by
+// an aborted render on an otherwise idle app are still cleaned up. Sweeping
+// is always safe: a late subscriber re-creates the reaction through
+// getOrCreateReaction at the cost of a recompute.
+let provisionalCurrent = new Set<string>();
+let provisionalPrevious = new Set<string>();
+let sweepScheduled = false;
+
+function scheduleProvisionalSweep(): void {
+    if (sweepScheduled) return;
+    sweepScheduled = true;
+    scheduleAfterRender(() => {
+        sweepScheduled = false;
+        sweepProvisionalReactions();
+    });
+}
+
+export function markProvisionalReaction(key: string): void {
+    provisionalCurrent.add(key);
+    scheduleProvisionalSweep();
+}
+
+export function unmarkProvisionalReaction(key: string): void {
+    provisionalCurrent.delete(key);
+    provisionalPrevious.delete(key);
+}
+
+export function sweepProvisionalReactions(): void {
+    for (const key of provisionalPrevious) {
+        const reaction = reactionsRegistry.get(key);
+        if (reaction && !reaction.isAlive) {
+            reactionsRegistry.delete(key);
+        }
+    }
+    provisionalPrevious = provisionalCurrent;
+    provisionalCurrent = new Set();
+    // Freshly promoted entries need one more cycle to be deleted
+    if (provisionalPrevious.size > 0) {
+        scheduleProvisionalSweep();
     }
 }
 

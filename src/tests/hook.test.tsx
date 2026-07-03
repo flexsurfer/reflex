@@ -7,6 +7,7 @@ import { initAppDb } from '../db';
 import { useSubscription } from '../hook';
 import { regEvent } from '../events';
 import { dispatch } from '../router';
+import { hasReaction } from '../registrar';
 import { waitForEventAndReaction } from './test-utils';
 
 describe('React Hooks', () => {
@@ -299,5 +300,135 @@ describe('React Hooks', () => {
         expect(result.current.counter).toBe(12);
       });
     });
+
+    it('should re-subscribe when subscription parameters change', async () => {
+      regSub('todo-text-by-id', (todos, id) => {
+        return (todos || []).find((todo: any) => todo.id === id)?.text ?? null;
+      }, () => [['todos']]);
+
+      initAppDb({
+        todos: [
+          { id: 1, text: 'First todo', completed: false },
+          { id: 2, text: 'Second todo', completed: true }
+        ]
+      });
+
+      const { result, rerender } = renderHook(
+        ({ id }: { id: number }) => useSubscription<string | null>(['todo-text-by-id', id]),
+        { initialProps: { id: 1 } }
+      );
+
+      expect(result.current).toBe('First todo');
+
+      // Changing the parameter must switch to the new reaction,
+      // not keep returning data for the id captured on first mount
+      rerender({ id: 2 });
+
+      expect(result.current).toBe('Second todo');
+
+      // Updates must flow through the re-subscribed reaction
+      regEvent('rename-todo-2', ({ draftDb }) => {
+        draftDb.todos[1].text = 'Renamed todo';
+      });
+
+      act(() => {
+        dispatch(['rename-todo-2']);
+      });
+
+      await waitFor(() => {
+        expect(result.current).toBe('Renamed todo');
+      });
+    });
+
+    it('should prune reactions from the registry after the last watcher unsubscribes', () => {
+      const { unmount } = renderHook(() => useSubscription(['todos-count']));
+
+      expect(hasReaction(JSON.stringify(['todos-count']))).toBe(true);
+      expect(hasReaction(JSON.stringify(['todos']))).toBe(true);
+
+      unmount();
+
+      // Both the computed reaction and its now-unused root dependency
+      // should be removed so parameterized subs cannot leak memory
+      expect(hasReaction(JSON.stringify(['todos-count']))).toBe(false);
+      expect(hasReaction(JSON.stringify(['todos']))).toBe(false);
+    });
+
+    it('should keep shared reactions registered while another watcher remains', () => {
+      const first = renderHook(() => useSubscription(['todos-count']));
+      const second = renderHook(() => useSubscription(['todos-count']));
+
+      first.unmount();
+
+      expect(hasReaction(JSON.stringify(['todos-count']))).toBe(true);
+
+      second.unmount();
+
+      expect(hasReaction(JSON.stringify(['todos-count']))).toBe(false);
+    });
+
+    it('should render consistent values across subscriptions sharing a dependency', async () => {
+      regSub('cons-base');
+      regSub('cons-x10', (v: number) => v * 10, () => [['cons-base']]);
+      regSub('cons-x100', (v: number) => v * 100, () => [['cons-base']]);
+
+      initAppDb({ 'cons-base': 1 });
+
+      regEvent('cons-set-base', ({ draftDb }, v: number) => {
+        draftDb['cons-base'] = v;
+      });
+
+      // Record every committed render's pair of values
+      const observed: Array<{ a: number; b: number }> = [];
+      const { result } = renderHook(() => {
+        const a = useSubscription<number>(['cons-x10']);
+        const b = useSubscription<number>(['cons-x100']);
+        observed.push({ a, b });
+        return { a, b };
+      });
+
+      expect(result.current).toEqual({ a: 10, b: 100 });
+
+      act(() => {
+        dispatch(['cons-set-base', 2]);
+      });
+      await waitFor(() => {
+        expect(result.current).toEqual({ a: 20, b: 200 });
+      });
+
+      act(() => {
+        dispatch(['cons-set-base', 3]);
+      });
+      await waitFor(() => {
+        expect(result.current).toEqual({ a: 30, b: 300 });
+      });
+
+      // No committed render may mix values from different db versions
+      for (const { a, b } of observed) {
+        expect(b).toBe(a * 10);
+      }
+    });
+
+    it('should resubscribe correctly after a full unmount/remount cycle', async () => {
+      const key = JSON.stringify(['todos-count']);
+      const first = renderHook(() => useSubscription<number>(['todos-count']));
+      expect(first.result.current).toBe(1);
+      first.unmount();
+      expect(hasReaction(key)).toBe(false);
+
+      // Data changes while nothing is mounted
+      regEvent('clear-todos', ({ draftDb }) => {
+        draftDb.todos = [];
+      });
+      act(() => {
+        dispatch(['clear-todos']);
+      });
+      await waitForEventAndReaction();
+
+      // Remount creates a fresh reaction and sees current data immediately
+      const second = renderHook(() => useSubscription<number>(['todos-count']));
+      expect(second.result.current).toBe(0);
+      second.unmount();
+    });
   });
-}); 
+});

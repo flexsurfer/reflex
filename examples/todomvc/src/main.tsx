@@ -9,12 +9,14 @@ import './storage'
 import { dispatch, enableTracing, enableTracePrint, HotReloadWrapper } from '@lib/index'
 import { enableMapSet } from 'immer'
 import { EVENT_IDS } from './event-ids';
+import { enableDevtools } from '@flexsurfer/reflex-devtools'
 
 // todos field in appDb is a Map, so we need to enable it explicitly for immer
 enableMapSet()
 // Enable tracing and trace printing in console for debugging
 enableTracing()
 enableTracePrint()
+enableDevtools()
 
 // Initialize the app
 dispatch([EVENT_IDS.INIT_APP]);
