@@ -767,12 +767,12 @@ describe('Complex data structures and memoization', () => {
 
   describe('Deep equality optimization with objects', () => {
     it('should not invoke computeFn when object dependencies have not changed', async () => {
-      const obj1 = { a: 1, b: { c: 2, d: [3, 4] } };
-      const obj2 = { x: 10, y: { z: 20 } };
-      
+      let obj1 = { a: 1, b: { c: 2, d: [3, 4] } };
+      let obj2 = { x: 10, y: { z: 20 } };
+
       const root1 = Reaction.create(() => obj1);
       const root2 = Reaction.create(() => obj2);
-      
+
       const dep1computeFn = jest.fn((o1, o2) => ({
         total: o1.b.c + o2.y.z
       }));
@@ -782,29 +782,40 @@ describe('Complex data structures and memoization', () => {
       const computeFn = jest.fn((d) => ({
         ...d
       }));
-      
+
       const computed = Reaction.create(computeFn, [dep1computed]);
       const callback = jest.fn();
       computed.watch(callback);
-      
+
       // Force initial computation
       const result1 = computed.computeValue();
       expect(computeFn).toHaveBeenCalledTimes(1);
       expect(dep1computeFn).toHaveBeenCalledTimes(1);
       expect(result1.total).toBe(22); // 1 + 10
-      
-      // Mark dependencies dirty but keep same object references
-      obj1.a = 2;
-      obj2.x = 20;
+
+      // Mark dependencies dirty but keep same object references: roots gate
+      // on identity, so nothing downstream recomputes at all
       root1.markDirty();
       root2.markDirty();
-      
+
       await waitForMicrotasks();
-      expect(dep1computeFn).toHaveBeenCalledTimes(2);
-      // computeFn should NOT be called again since values haven't changed
+      expect(dep1computeFn).toHaveBeenCalledTimes(1);
       expect(computeFn).toHaveBeenCalledTimes(1);
       expect(callback).not.toHaveBeenCalled();
-      
+
+      // New references with equivalent content recompute the intermediate,
+      // and its deep-equal result gates the rest of the chain
+      obj1 = { a: 2, b: { c: 2, d: [3, 4] } }; // b.c unchanged
+      obj2 = { x: 20, y: { z: 20 } }; // y.z unchanged
+      root1.markDirty();
+      root2.markDirty();
+
+      await waitForMicrotasks();
+      expect(dep1computeFn).toHaveBeenCalledTimes(2);
+      // computeFn should NOT be called again since the computed result is deep-equal
+      expect(computeFn).toHaveBeenCalledTimes(1);
+      expect(callback).not.toHaveBeenCalled();
+
       computed.unwatch(callback);
     });
 
@@ -1226,7 +1237,8 @@ describe('Complex data structures and memoization', () => {
 
   describe('Custom equality check configuration', () => {
     // Note: Equality checks are only used for COMPUTED reactions (those with dependencies).
-    // Root reactions always mark changed=true and don't use equality checks.
+    // Root reactions gate on identity (Object.is): they bump their version only
+    // when the slice reference actually changed.
 
     it('should use custom equality check for computed reactions', async () => {
       // Custom equality: only compare the 'id' field, ignoring 'timestamp'
@@ -1261,23 +1273,27 @@ describe('Complex data structures and memoization', () => {
     });
 
     it('should use never-equal check to always trigger changes', async () => {
-      // neverEqual treats all values as different, so watchers should always be notified
+      // neverEqual treats all values as different, so watchers are notified on
+      // every recompute — even when the computed content is identical. The
+      // root must still change identity (roots gate on Object.is): fresh
+      // object, same content.
       const neverEqual: EqualityCheckFn = () => false;
-      let rootValue = 1;
+      let rootValue = { n: 1 };
       const root = Reaction.create(() => rootValue);
-      const computed = Reaction.create((val) => val, [root], neverEqual);
+      const computed = Reaction.create((val) => val.n, [root], neverEqual);
       const callback = jest.fn();
 
       computed.watch(callback);
       expect(computed.computeValue()).toBe(1);
       callback.mockClear();
 
-      // Even with same value, neverEqual should trigger change
-      rootValue = 1; // Same value
+      // Same content, new reference: deep equality would swallow this,
+      // neverEqual must trigger the change
+      rootValue = { n: 1 };
       root.markDirty();
 
       await waitForMicrotasks();
-      expect(callback).toHaveBeenCalledWith(1); // Should be called even though value didn't change
+      expect(callback).toHaveBeenCalledWith(1); // Called even though the value didn't change
 
       computed.unwatch(callback);
     });

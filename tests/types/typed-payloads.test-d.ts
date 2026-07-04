@@ -9,6 +9,7 @@
  */
 import {
   dispatch,
+  dispatchSync,
   regEvent,
   regEffect,
   regSub,
@@ -66,6 +67,14 @@ debounceAndDispatch(['todos/add', 'title'], 100);
 throttleAndDispatch(['app/init'], 100);
 // @ts-expect-error unknown event id
 debounceAndDispatch(['todos/typo'], 100);
+
+// dispatchSync shares the dispatch typing
+dispatchSync(['todos/add', 'buy milk']);
+dispatchSync(['app/init']);
+// @ts-expect-error unknown event id is rejected once EventPayloads is augmented
+dispatchSync(['todos/typo', 'x']);
+// @ts-expect-error wrong payload type
+dispatchSync(['todos/add', 42]);
 
 // ---- regEvent --------------------------------------------------------
 

@@ -8,7 +8,7 @@ import { useSubscription } from '../hook';
 import { regEvent } from '../events';
 import { dispatch } from '../router';
 import { hasReaction } from '../registrar';
-import { waitForEventAndReaction } from './test-utils';
+import { waitForAnimationFrame, waitForEventAndReaction } from './test-utils';
 
 describe('React Hooks', () => {
   // Register test subscriptions
@@ -424,8 +424,12 @@ describe('React Hooks', () => {
         dispatch(['clear-todos']);
       });
       await waitForEventAndReaction();
+      // Subscriptions serve the last flushed db generation; wait for the
+      // animation-frame flush so the change is visible to new subscribers
+      await waitForAnimationFrame();
+      await waitForEventAndReaction();
 
-      // Remount creates a fresh reaction and sees current data immediately
+      // Remount creates a fresh reaction and sees the flushed data
       const second = renderHook(() => useSubscription<number>(['todos-count']));
       expect(second.result.current).toBe(0);
       second.unmount();

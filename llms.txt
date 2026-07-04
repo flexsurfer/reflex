@@ -47,6 +47,7 @@ Rules:
 - Return effect tuples for side effects.
 - When sending mutated draft data to effects, always use `current(...)`.
 - Prefer deterministic coeffects (time/id/random/env) instead of direct globals for testability.
+- `dispatch` is async (queued; subscriptions update on the next animation-frame flush). `dispatchSync` commits and notifies subscribers before returning — use it only where that timing is load-bearing (controlled inputs bound to db state). Never call `dispatchSync` from inside an event handler (it throws) — return a `['dispatch', ...]` effect instead. Calling plain `dispatch` from inside a handler warns in dev for the same reason: emit follow-up events through the `['dispatch', ...]` effect.
 
 Event naming:
 - Keep exported constant keys in `UPPER_SNAKE_CASE`.
@@ -71,6 +72,7 @@ For compile-checked dispatch payloads, declare the typed payload maps (section 1
 - Keep subscriptions deterministic and lightweight.
 - Subscriptions must return data shaped and ready for direct view consumption — all filtering, sorting, formatting, and joining should happen in the subscription layer, not in React components.
 - Move heavy computations to events (precompute once, read many); avoid repeated expensive derivations in hot subscriptions.
+- Computed subs gate update propagation with deep equality by default — O(result size) per recompute. For subs returning large derived collections, pass a cheaper check: `regSub(id, computeFn, depsFn, { equalityCheck: shallowEqual })` (`shallowEqual` is exported from reflex). Immer's structural sharing keeps unchanged rows identical, so a shallow element-by-element check is usually enough.
 - For typed `useSubscription` params and results, declare `SubPayloads` (section 12).
 
 ## 6) React Component Contract
@@ -83,7 +85,7 @@ For compile-checked dispatch payloads, declare the typed payload maps (section 1
   `const todos = useSubscription<Todo[]>([SUB_IDS.TODOS], 'TodoList');`
 - Never transform, filter, sort, or reshape subscription data inside a component — if the view needs a different shape, create a dedicated subscription that returns it ready to render.
 - Use direct React hooks only for local/ephemeral component concerns:
-  - temporary form/input draft state before dispatch
+  - temporary form/input draft state before dispatch (alternative: bind the input value to a subscription and `dispatchSync` in `onChange` — the sync flush keeps the controlled input in step with the keystroke)
   - UI-only toggles scoped to one component (hover/open/focus)
   - refs, DOM measurement, animation lifecycle
 - Do not mirror Reflex global state in `useState`/`useReducer`.

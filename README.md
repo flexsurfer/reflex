@@ -41,31 +41,6 @@ After many years of building applications with re-frame in the ClojureScript wor
   - [Einbürgerungstest](https://github.com/flexsurfer/einburgerungstest/) - Cross-platform web/mobile app built with reflex ([Live Demo](https://www.ebtest.org/))
   - [StarRupture Planner](https://github.com/flexsurfer/starrupture-planner) - Production planning tool built with reflex ([Live Demo](https://www.starrupture-planner.com/))
 
-## 🔒 Typed Events & Subscriptions (opt-in)
-
-Event and subscription ids are plain strings by default. To have the compiler check them, declare payload maps once via module augmentation — no runtime cost, and the untyped API keeps working until you do:
-
-```ts
-declare module '@flexsurfer/reflex' {
-  interface EventPayloads {
-    'todos/add': [title: string];
-    'todos/toggle': [id: string];
-  }
-  interface SubPayloads {
-    'todos/list': { params: []; result: Todo[] };
-    'todos/by_id': { params: [id: string]; result: Todo | undefined };
-  }
-  interface EffectPayloads {
-    'storage/set_todos': Todo[];
-  }
-  interface AppDb {
-    todos: Todo[];
-  }
-}
-```
-
-With the maps declared, `dispatch(['todos/add', 42])` and `dispatch(['todos/typo'])` are compile errors, `regEvent` infers handler params *and* a typed `draftDb` (from `AppDb`) with no generics, effect tuples returned from handlers are checked — including events emitted via the built-in `dispatch`/`dispatch-later` effects — and `useSubscription(['todos/by_id', id])` checks params and infers the result type. See [`llms.txt`](./llms.txt) (section 12) for the full contract.
-
 ## 🤖 Using with AI Assistants
 
 Reflex ships an [`llms.txt`](./llms.txt) file — a compact, AI-readable guide covering state architecture, event/effect/subscription patterns, and code generation rules. Point your AI tool at it so it generates idiomatic Reflex code from the start.

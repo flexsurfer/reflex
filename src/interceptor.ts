@@ -112,8 +112,6 @@ function createContext(eventV: EventVector, interceptors: Interceptor[]): Contex
     effects: [],
     queue: [...interceptors],
     stack: [],
-    newDb: {},
-    patches: [],
     originalException: false
   };
 }

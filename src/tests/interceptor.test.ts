@@ -14,7 +14,6 @@ function createTestContext(overrides: Partial<Context> = {}): Context {
         },
         effects: [],
         newDb: {},
-        patches: [],
         queue: [],
         stack: [],
         originalException: false,
@@ -256,8 +255,9 @@ describe('interceptor', () => {
                     expect(ctx.coeffects.event).toEqual(['test-event', 'param1', 'param2']);
                     expect(ctx.coeffects.draftDb).toEqual({});
                     expect(ctx.effects).toEqual([]);
-                    expect(ctx.newDb).toEqual({});
-                    expect(ctx.patches).toEqual([]);
+                    // newDb stays unset until the event handler interceptor
+                    // runs; patches exist only as trace tags, not on context
+                    expect(ctx.newDb).toBeUndefined();
                     expect(ctx.queue).toEqual([]);
                     expect(ctx.stack).toEqual([interceptor]);
 

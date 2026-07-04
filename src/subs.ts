@@ -16,7 +16,7 @@ import {
     setRootSubSource,
     getRootSubIdBySource
 } from './registrar';
-import { getAppDb } from './db';
+import { getRenderDb } from './db';
 import { mergeTrace, withTrace } from './trace';
 import { getGlobalEqualityCheck } from './settings';
 import { IS_DEV } from './env';
@@ -33,7 +33,10 @@ function registerRootSub (id: Id, sourceKey: string) {
     setRootSubSource(id, sourceKey)
     // Root subs read top-level keys dynamically; stay untyped so this
     // compiles when the app augments AppDb (no string index signature there).
-    registerHandler(KIND, id, () => getAppDb<Record<string, any>>()[sourceKey])
+    // They read the render generation (last flushed db), not the live db:
+    // between an event's commit and the flush, new and cached subscriptions
+    // must serve the same generation.
+    registerHandler(KIND, id, () => getRenderDb<Record<string, any>>()[sourceKey])
     registerHandler(KIND_DEPS, id, () => [])
 }
 

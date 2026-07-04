@@ -4,9 +4,11 @@
  */
 
 import type { DispatchVector, EventVector } from './types';
-import { handle } from './events';
+import { getHandlingEventId, getRunningHandlerEventId, handle } from './events';
+import { flushSubscriptions } from './db';
 import { consoleLog } from './loggers';
 import { scheduleAfterRender, scheduleNextTick } from './schedule';
+import { IS_DEV } from './env';
 
 type FSMState = 'idle' | 'scheduled' | 'running' | 'paused';
 
@@ -189,5 +191,45 @@ export function dispatch(event: DispatchVector): void {
         consoleLog('error', '[reflex] invalid dispatch event vector.');
         return;
     }
+    if (IS_DEV) {
+        // Calling dispatch inside an event handler works (the event is
+        // queued, not lost) but breaks the purity contract handlers are
+        // verified by. Warn instead of throwing: unlike dispatchSync, no
+        // state can be corrupted.
+        const handlerId = getRunningHandlerEventId();
+        if (handlerId !== null) {
+            consoleLog('warn', `[reflex] dispatch called for '${String(event[0])}' from inside the event handler for '${handlerId}'. Event handlers must stay pure — return a ['dispatch', [...]] effect instead. The event was queued anyway.`);
+        }
+    }
     eventQueue.push(event);
+}
+
+/**
+ * Dispatch an event synchronously: the handler runs, the db commits, and
+ * subscription watchers are notified before this function returns — bypassing
+ * both the event queue and the animation-frame flush.
+ *
+ * Use it only where the synchronous timing is load-bearing, e.g. controlled
+ * inputs whose value comes from db state (`onChange` must commit before React
+ * processes the next keystroke). `dispatch` remains the default.
+ *
+ * Notes:
+ * - Must not be called from within an event handler — that throws. Return a
+ *   `['dispatch', ...]` effect instead.
+ * - Unlike `dispatch`, handler errors propagate synchronously to the caller
+ *   (after the registered event error handler runs).
+ */
+export function dispatchSync(event: DispatchVector): void {
+    if (!isValidEventVector(event)) {
+        consoleLog('error', '[reflex] invalid dispatchSync event vector.');
+        return;
+    }
+    const handlingId = getHandlingEventId();
+    if (handlingId !== null) {
+        const message = `[reflex] dispatchSync called for '${String(event[0])}' while event '${handlingId}' is being handled. dispatchSync must not be called from an event handler; return a ['dispatch', ...] effect instead.`;
+        consoleLog('error', message);
+        throw new Error(message);
+    }
+    handle(event);
+    flushSubscriptions(true);
 }

@@ -5,10 +5,10 @@ import * as interceptor from './interceptor';
 import { getInjectCofxInterceptor } from './cofx';
 import { doFxInterceptor } from './fx';
 import type { Draft } from 'immer';
-import { enablePatches, produceWithPatches } from 'immer';
+import { enablePatches, produce, produceWithPatches } from 'immer';
 import { getAppDb } from './db';
 import { getGlobalInterceptors } from './settings';
-import { mergeTrace, withTrace } from './trace';
+import { isTraceEnabled, mergeTrace, withTrace } from './trace';
 import { IS_DEV } from './env';
 
 const KIND = 'event';
@@ -104,11 +104,31 @@ function eventHandlerInterceptor(handler: EventHandler<any>): Interceptor {
       const params = event.slice(1); // Extract parameters excluding the event ID
 
       let effects: Effects = [];
-      const [newDb, patches, reversePatches] = produceWithPatches(getAppDb<Db>(),
-        (draftDb: Draft<Db>) => {
-          const coeffectsWithDb = { ...context.coeffects, draftDb };
+      const recipe = (draftDb: Draft<Db>) => {
+        const coeffectsWithDb = { ...context.coeffects, draftDb };
+        // Window in which the pure handler runs: dispatch() warns in dev when
+        // called inside it. Deliberately narrower than handlingEventId —
+        // effect handlers (the legitimate home of the built-in 'dispatch'
+        // effect) run outside this window.
+        runningHandlerEventId = event[0];
+        try {
           effects = handler(coeffectsWithDb, ...params) || [];
-        });
+        } finally {
+          runningHandlerEventId = null;
+        }
+      };
+
+      // Patches are only consumed by the trace pipeline (devtools); with
+      // tracing off, plain produce skips patch generation entirely. Change
+      // detection and the root wake-up rely on Immer's structural sharing
+      // instead (see updateAppDb/flushSubscriptions in db.ts).
+      if (isTraceEnabled()) {
+        const [newDb, patches, reversePatches] = produceWithPatches(getAppDb<Db>(), recipe);
+        context.newDb = newDb;
+        mergeTrace({ tags: { 'patches': patches, 'reversePatches': reversePatches, 'effects': effects } });
+      } else {
+        context.newDb = produce(getAppDb<Db>(), recipe);
+      }
 
       if (IS_DEV) {
         try {
@@ -117,11 +137,6 @@ function eventHandlerInterceptor(handler: EventHandler<any>): Interceptor {
           consoleLog('warn', `[reflex] Effects ${effects} contain Proxy (probably an Immer draft). Use current() for draftDb values.`);
         }
       }
-      
-      context.newDb = newDb;
-      context.patches = patches;
-
-      mergeTrace({ tags: { 'patches': patches, 'reversePatches': reversePatches, 'effects': effects } });
 
       if (!Array.isArray(effects)) {
         consoleLog('warn', `[reflex] effects expects a vector, but was given ${typeof effects}`);
@@ -142,6 +157,23 @@ export const injectGlobalInterceptors: Interceptor = {
     return context;
   }
 };
+
+// Id of the event whose interceptor chain is currently executing, or null.
+// Lets dispatchSync refuse to run reentrantly from inside an event handler.
+let handlingEventId: Id | null = null;
+
+export function getHandlingEventId(): Id | null {
+  return handlingEventId;
+}
+
+// Id of the event whose HANDLER FUNCTION is currently executing, or null.
+// Narrower than handlingEventId: set only around the pure handler, not the
+// full interceptor chain, so effect handlers can dispatch freely.
+let runningHandlerEventId: Id | null = null;
+
+export function getRunningHandlerEventId(): Id | null {
+  return runningHandlerEventId;
+}
 
 export function handle(eventV: EventVector): void {
   const eventId: Id = eventV[0];
@@ -168,12 +200,17 @@ export function handle(eventV: EventVector): void {
     eventHandlerInterceptor(handler)
   ]
 
-  withTrace(
-    { operation: eventId, opType: KIND, tags: { event: eventV } },
-    () => {
-      interceptor.execute(eventV, interceptors);
-    }
-  );
+  handlingEventId = eventId;
+  try {
+    withTrace(
+      { operation: eventId, opType: KIND, tags: { event: eventV } },
+      () => {
+        interceptor.execute(eventV, interceptors);
+      }
+    );
+  } finally {
+    handlingEventId = null;
+  }
 }
 
 /**

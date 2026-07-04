@@ -10,7 +10,7 @@ import type {
   TraceErrorTag
 } from './types';
 import { dispatch } from './router';
-import { updateAppDbWithPatches } from './db';
+import { updateAppDb } from './db';
 import { getHandler, registerHandler } from './registrar';
 import { consoleLog } from './loggers';
 import { mergeTrace } from './trace';
@@ -31,8 +31,10 @@ export const doFxInterceptor: Interceptor = {
   id: 'do-fx',
   after: (context: Context): Context => {
     
-    if (context.newDb && context.patches) {
-      updateAppDbWithPatches(context.newDb, context.patches);
+    // newDb is only set once the event handler interceptor ran; committing an
+    // unchanged db is a no-op inside updateAppDb (same reference).
+    if (context.newDb !== undefined) {
+      updateAppDb(context.newDb);
     }
 
     const effects = context.effects;

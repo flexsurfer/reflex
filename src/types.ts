@@ -193,8 +193,8 @@ export interface CoEffects<T = DefaultAppDb> {
 export interface Context<T = Record<string, any>> {
   coeffects: CoEffects<T>;
   effects: Effects;
-  newDb: Db<T>;
-  patches: any[];
+  /** The db generation produced by the event handler; unset until it ran. */
+  newDb?: Db<T>;
   queue: Interceptor<T>[];
   stack: Interceptor<T>[];
   originalException: boolean;

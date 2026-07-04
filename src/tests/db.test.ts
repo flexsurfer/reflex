@@ -1,6 +1,5 @@
-import { enablePatches, produceWithPatches } from 'immer';
-import { initAppDb, getAppDb, updateAppDbWithPatches } from '../db';
-enablePatches();
+import { produce } from 'immer';
+import { initAppDb, getAppDb, updateAppDb as commitAppDb } from '../db';
 // Type definitions for testing
 interface TestAppState {
   counter: number;
@@ -30,8 +29,8 @@ interface SimpleState {
 
 function updateAppDb<T = Record<string, any>>(updater: (draft: T) => void) {
   const initialDb = getAppDb();
-  const [newDb, patches] = produceWithPatches(initialDb, updater);
-  updateAppDbWithPatches(newDb, patches);
+  const newDb = produce(initialDb, updater);
+  commitAppDb(newDb);
 }
 
 describe('Immer integration', () => {
