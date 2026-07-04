@@ -3,10 +3,31 @@ import type {
   Interceptor,
   Context,
   CoEffects,
-  InterceptorDirection
+  InterceptorDirection,
+  TraceErrorTag
 } from './types';
 
 import { getHandler } from './registrar';
+import { mergeTrace } from './trace';
+
+/**
+ * Attach a JSON-serializable description of an interceptor/handler exception
+ * to the current event trace, so devtools/MCP can report why the event
+ * failed. `e` may be the wrapped reflex error (with `.data`/`.cause`) or a
+ * raw error from the no-error-handler path.
+ */
+function traceError(e: any, eventV: EventVector): void {
+  const original = e?.cause ?? e;
+  const error: TraceErrorTag = {
+    phase: 'handler',
+    message: String(original?.message ?? original),
+    stack: typeof original?.stack === 'string' ? original.stack : undefined,
+    interceptor: e?.data?.interceptor,
+    direction: e?.data?.direction,
+    eventV
+  };
+  mergeTrace({ tags: { error } });
+}
 
 export function isInterceptor(m: any): m is Interceptor {
   if (typeof m !== 'object' || m === null) return false;
@@ -79,7 +100,9 @@ function changeDirection(context: Context): Context {
 }
 
 function createContext(eventV: EventVector, interceptors: Interceptor[]): Context {
-  const coeffects: CoEffects = {
+  // Db-shape agnostic: the real draft is injected by eventHandlerInterceptor,
+  // so this placeholder must not be typed against an augmented AppDb.
+  const coeffects: CoEffects<Record<string, any>> = {
     event: eventV,
     draftDb: {}
   };
@@ -108,12 +131,18 @@ export function execute(eventV: EventVector, interceptors: Interceptor[]): Conte
   const ctx = createContext(eventV, interceptors);
   const errorHandler = getHandler('error', 'event-handler') as ((original: Error, reflex: Error & { data: any }) => void) | undefined;
   if (!errorHandler) {
-    return executeInterceptors({ ...ctx, originalException: true });
+    try {
+      return executeInterceptors({ ...ctx, originalException: true });
+    } catch (e: any) {
+      traceError(e, eventV);
+      throw e;
+    }
   }
   try {
     return executeInterceptors(ctx);
   } catch (e: any) {
     const reflexError = mergeExData(e, { eventV });
+    traceError(reflexError, eventV);
     errorHandler((e as any).cause || e, reflexError);
     return ctx; // Return original context if error handler doesn't throw
   }

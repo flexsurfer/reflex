@@ -1,6 +1,6 @@
 import { Reaction } from './reaction'
 import { consoleLog } from './loggers';
-import type { SubVector, Id, SubHandler, SubDepsHandler, SubConfig } from './types';
+import type { SubVector, Id, SubHandler, SubDepsHandler, SubConfig, SubPayloads, SubParams, SubResult, SubscribeVector } from './types';
 import {
     getReaction,
     setReaction,
@@ -31,11 +31,17 @@ function registerRootSub (id: Id, sourceKey: string) {
     }
 
     setRootSubSource(id, sourceKey)
-    registerHandler(KIND, id, () => getAppDb()[sourceKey])
+    // Root subs read top-level keys dynamically; stay untyped so this
+    // compiles when the app augments AppDb (no string index signature there).
+    registerHandler(KIND, id, () => getAppDb<Record<string, any>>()[sourceKey])
     registerHandler(KIND_DEPS, id, () => [])
 }
 
-export function regSub<R>(id: Id, computeFn?: ((...values: any[]) => R) | string, depsFn?: (...params: any[]) => SubVector[], config?: SubConfig): void {
+// When the app augments SubPayloads, the computeFn return value is checked
+// against the declared result for K (undeclared ids fall back to R). K only
+// infers a literal when R isn't passed explicitly; `regSub<Todo[]>(id, ...)`
+// keeps its current behavior.
+export function regSub<R = any, K extends Id = Id>(id: K, computeFn?: ((...values: any[]) => SubResult<K, R>) | string, depsFn?: (...params: any[]) => SubVector[], config?: SubConfig): void {
     if (hasHandler(KIND, id)) {
         consoleLog('warn', `[reflex] Overriding. Subscription '${id}' already registered.`)
     }
@@ -189,6 +195,10 @@ export function getOrCreateReaction(subVector: SubVector): Reaction<any> {
     return reaction
 }
 
+// Same typing contract as useSubscription: untyped until SubPayloads is
+// augmented, then declared ids infer params and result from the map.
+export function getSubscriptionValue<K extends keyof SubPayloads & Id>(subVector: [K, ...SubParams<K>]): SubResult<K>;
+export function getSubscriptionValue<T>(subVector: SubscribeVector): T;
 export function getSubscriptionValue<T>(subVector: SubVector): T {
     const reaction = getOrCreateReaction(subVector)
     return reaction ? reaction.computeValue() : undefined as T

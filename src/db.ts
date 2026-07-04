@@ -1,4 +1,4 @@
-import type { Db } from './types';
+import type { Db, DefaultAppDb } from './types';
 import { getReaction, getRootSubIdBySource } from './registrar';
 import { consoleLog } from './loggers';
 import { scheduleAfterRender } from './schedule';
@@ -9,11 +9,15 @@ let appDb: any = {};
 const reactionsQueue = new Set<string>();
 let reactionsScheduled = false;
 
-export function initAppDb<T = Record<string, any>>(value: Db<T>): void {
+// Keeps T out of inference so the DefaultAppDb default applies: without it,
+// T infers from `value` and an augmented AppDb would never be checked.
+type NoInfer<T> = [T][T extends any ? 0 : never];
+
+export function initAppDb<T = DefaultAppDb>(value: Db<NoInfer<T>>): void {
   appDb = value;
 }
 
-export function getAppDb<T = Record<string, any>>(): Db<T> {
+export function getAppDb<T = DefaultAppDb>(): Db<T> {
   return appDb as Db<T>;
 }
 

@@ -23,7 +23,9 @@ export function getInjectCofxInterceptor(id: string, value?: any): Interceptor {
   return {
     id: `inject-${id}`,
     before: (context: Context): Context => {
-      const handler = getHandler(KIND, id) as CoEffectHandler | undefined;
+      // Db-shape agnostic: registered handlers may be typed against an
+      // augmented AppDb, but the interceptor chain carries untyped coeffects.
+      const handler = getHandler(KIND, id) as CoEffectHandler<any> | undefined;
       if (handler) {
         try {
           context.coeffects = handler({ ...context.coeffects }, value);

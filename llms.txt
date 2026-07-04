@@ -55,6 +55,8 @@ Event naming:
   - `BASES_CREATE` -> `bases/create`
   - `PRODUCTION_PLAN_ADD_BUILDINGS_TO_BASE` -> `production_plan/add_buildings_to_base`
 
+For compile-checked dispatch payloads, declare the typed payload maps (section 12) — with them, a wrong or missing payload is a `tsc` error instead of a runtime surprise.
+
 ## 4) Effects and Coeffects
 
 - Put all I/O here: localStorage, HTTP, timers, analytics, navigation.
@@ -69,6 +71,7 @@ Event naming:
 - Keep subscriptions deterministic and lightweight.
 - Subscriptions must return data shaped and ready for direct view consumption — all filtering, sorting, formatting, and joining should happen in the subscription layer, not in React components.
 - Move heavy computations to events (precompute once, read many); avoid repeated expensive derivations in hot subscriptions.
+- For typed `useSubscription` params and results, declare `SubPayloads` (section 12).
 
 ## 6) React Component Contract
 
@@ -216,6 +219,7 @@ Bounded file sets for common tasks:
 - New derived data: add sub ID → `regSub` → `useSubscription` in component.
 - State shape change: `db.ts` + root subs + handlers touching that key (grep the db key).
 - State bug: reproduce → devtools event trace (event sequence + Immer patches show exactly which event wrote what) → read that one handler. Prefer the trace over reading code.
+- Failed events are visible in traces with a normalized error shape (`phase`, `message`, `stack`, plus `interceptor`/`direction` or `effect`): an event whose handler/interceptor threw carries `tags.error` with `phase: 'handler'`; dispatching an unregistered event id produces a trace with `tags.error.phase: 'missing-handler'`; effects that threw after a committed event are listed in `tags.effectErrors` with `phase: 'effect'`. Check these tags before assuming a dispatch worked.
 - If the `reflex-devtools` MCP server is connected (`npx reflex-devtools --mcp` + `@flexsurfer/reflex-devtools-mcp`), use it instead of reading code to inspect the running app: `get_app_state` (current db, supports path), `get_active_subs` (computed sub values), `get_handlers` (all registered event/fx/cofx/sub ids — a runtime index of the app), `get_traces` (events with patches/effects, sub runs, renders, timings), `dispatch_event` (trigger behavior to test).
 
 Keep the index self-documenting:
@@ -313,3 +317,45 @@ regSub(
 // dispatch([EVENT_IDS.APP_INIT]);
 // dispatch([EVENT_IDS.TODOS_ADD, 'Buy milk']);
 ```
+## 12) Typed Payload Maps (opt-in compile-time checking)
+
+Reflex ships four empty, augmentable interfaces: `EventPayloads` (event id → params tuple), `SubPayloads` (sub id → `{ params; result }`), `EffectPayloads` (effect id → payload type), and `AppDb` (the db shape). While unaugmented, the whole API stays untyped and everything above works as written. Declaring them turns `tsc` into a wiring verifier — typo'd ids, wrong payloads, wrong subscription usage, invalid effect tuples, and unknown db keys become compile errors.
+
+Declare them once, next to the ids files (e.g. `src/state/payload-maps.d.ts`):
+
+```ts
+import type { Todo, Showing } from './db';
+
+declare module '@flexsurfer/reflex' {
+  interface EventPayloads {
+    'app/init': [];
+    'todos/add': [title: string];
+    'todos/toggle': [id: string];
+  }
+  interface SubPayloads {
+    'todos/list': { params: []; result: Todo[] };
+    'todos/by_id': { params: [id: string]; result: Todo | undefined };
+  }
+  interface EffectPayloads {
+    'storage/set_todos': Todo[];
+    'ui/scroll_top': void; // no payload → the tuple is just ['ui/scroll_top']
+  }
+  interface AppDb {
+    todos: Todo[];
+    showing: Showing;
+    // or reuse an existing type: interface AppDb extends MyDbShape {}
+  }
+}
+```
+
+What this changes:
+- `dispatch([EVENT_IDS.TODOS_ADD, title])` — id must be declared, payload must match the tuple. Also applies to `debounceAndDispatch`/`throttleAndDispatch`.
+- `regEvent(EVENT_IDS.TODOS_ADD, ({ draftDb }, title) => ...)` — handler params are inferred from `EventPayloads` and `draftDb` from `AppDb`, with no generics. Avoid the explicit db generic (`regEvent<MyDb>(id, ...)`): it disables param inference — augment `AppDb` instead, or annotate coeffects inline (`({ draftDb }: CoEffects<MyDb>, title) => ...`). Undeclared ids stay permissive in `regEvent`.
+- Effect tuples returned from handlers are checked against `EffectPayloads`: declared ids with matching payloads only. The built-in `'dispatch'` and `'dispatch-later'` effects are always included, their ids are reserved and cannot be overridden by `EffectPayloads`, and their event vectors are checked against `EventPayloads` — so `return [['dispatch', [EVENT_IDS.X, payload]]]` gets the same checking as a direct `dispatch`. `regEffect` infers the handler's value param from the map.
+- `useSubscription([SUB_IDS.TODO_BY_ID, id])` — params checked, result type inferred (no explicit generic needed). Same for `getSubscriptionValue`. `regSub` checks the computeFn return type against the declared result.
+- `initAppDb(...)` is checked against `AppDb`; `getAppDb()` returns it.
+
+Rules:
+- Event/sub payloads must be tuples; use `[]` for no params. Use labeled tuple members (`[title: string]`) — they double as documentation. Effect payloads are single values; use `void` for effects with no payload.
+- Once `EventPayloads` is declared, every dispatched event id must be in it (undeclared ids fail to compile on `dispatch`). Same for `SubPayloads` and subscription ids, and for `EffectPayloads` and effect tuples returned from handlers. Keep the maps complete — they double as the app's API manifest.
+- Keep the maps in sync with the ids files: one entry per id, same naming.

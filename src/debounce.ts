@@ -1,4 +1,4 @@
-import type { EventVector, Id } from './types';
+import type { DispatchVector, Id } from './types';
 import { dispatch } from './router';
 
 // Storage for timeout IDs keyed by event keys
@@ -29,7 +29,7 @@ export function clearAll(): void {
  * Dispatches `event` iff it was not dispatched for the duration of `durationMs`.
  * Cancels any existing timeout for the same event and sets a new one.
  */
-export function debounceAndDispatch(event: EventVector, durationMs: number): void {
+export function debounceAndDispatch(event: DispatchVector, durationMs: number): void {
   const eventKey = event[0];
   clear(eventKey);
   
@@ -48,7 +48,7 @@ const throttle = new Map<Id, boolean>();
  * Dispatches event and ignores subsequent calls for the duration of `durationMs`.
  * Unlike debouncing, this dispatches immediately on the first call.
  */
-export function throttleAndDispatch(event: EventVector, durationMs: number): void {
+export function throttleAndDispatch(event: DispatchVector, durationMs: number): void {
   const eventKey = event[0];
   
   if (!throttle.get(eventKey)) {

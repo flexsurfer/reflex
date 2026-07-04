@@ -3,7 +3,7 @@
  * Implements an event queue with a finite-state-machine to schedule and process events.
  */
 
-import type { EventVector } from './types';
+import type { DispatchVector, EventVector } from './types';
 import { handle } from './events';
 import { consoleLog } from './loggers';
 import { scheduleAfterRender, scheduleNextTick } from './schedule';
@@ -137,8 +137,14 @@ export class EventQueue {
     }
 
     private exception(ex: any): void {
+        // queue[0] is the event whose processing threw; the rest never ran.
+        const failedEvent = this.queue[0];
+        const droppedEventIds = this.queue.slice(1).map((event) => event[0]);
         this.purge();
         consoleLog('error', '[reflex] event processing exception:', ex);
+        if (droppedEventIds.length > 0) {
+            consoleLog('error', `[reflex] event queue purged: ${droppedEventIds.length} pending event(s) dropped because '${String(failedEvent?.[0])}' threw:`, droppedEventIds);
+        }
     }
 
     private pause(laterFn: (f: () => void) => void): void {
@@ -173,9 +179,12 @@ function isValidEventVector(value: any): value is EventVector {
 }
 
 /**
- * Dispatch an event asynchronously
+ * Dispatch an event asynchronously.
+ *
+ * Accepts any `[id, ...params]` vector by default; once the app augments
+ * `EventPayloads`, only declared event ids with matching payloads typecheck.
  */
-export function dispatch(event: EventVector): void {
+export function dispatch(event: DispatchVector): void {
     if (!isValidEventVector(event)) {
         consoleLog('error', '[reflex] invalid dispatch event vector.');
         return;

@@ -1,4 +1,4 @@
-import type { Id, EventVector, EventHandler, Interceptor, Context, Db, Effects, ErrorHandler } from './types';
+import type { Id, EventVector, EventHandler, EventParams, DefaultAppDb, Interceptor, Context, Db, Effects, ErrorHandler, TraceErrorTag } from './types';
 import { getHandler, registerHandler, getInterceptors, setInterceptors } from './registrar';
 import { consoleLog } from './loggers';
 import * as interceptor from './interceptor';
@@ -13,14 +13,20 @@ import { IS_DEV } from './env';
 
 const KIND = 'event';
 
+// When the app augments EventPayloads, handler params are checked against the
+// declared payload tuple for K (undeclared ids stay `any[]`). When the app
+// augments AppDb, draftDb is typed without passing a generic. Note: an
+// explicit db generic (`regEvent<MyDb>(id, handler)`) fixes K to `Id`, which
+// suppresses payload inference — prefer augmenting AppDb, or annotate the
+// coeffects param inline (`({ draftDb }: CoEffects<MyDb>, ...)`) instead.
 /** Register an event handler with only a handler function (db event) */
-export function regEvent<T = Record<string, any>>(id: Id, handler: EventHandler<T>): void;
+export function regEvent<T = DefaultAppDb, K extends Id = Id>(id: K, handler: EventHandler<T, EventParams<K>>): void;
 /** Register an event handler with interceptors and handler function (backward compatibility) */
-export function regEvent<T = Record<string, any>>(id: Id, handler: EventHandler<T>, interceptors: Interceptor<T>[]): void;
+export function regEvent<T = DefaultAppDb, K extends Id = Id>(id: K, handler: EventHandler<T, EventParams<K>>, interceptors: Interceptor<T>[]): void;
 /** Register an event handler with cofx and handler function */
-export function regEvent<T = Record<string, any>>(id: Id, handler: EventHandler<T>, cofx: [Id, ...any[]][]): void;
+export function regEvent<T = DefaultAppDb, K extends Id = Id>(id: K, handler: EventHandler<T, EventParams<K>>, cofx: [Id, ...any[]][]): void;
 /** Register an event handler with cofx, interceptors and handler function */
-export function regEvent<T = Record<string, any>>(id: Id, handler: EventHandler<T>, cofx: [Id, ...any[]][], interceptors: Interceptor<T>[]): void;
+export function regEvent<T = DefaultAppDb, K extends Id = Id>(id: K, handler: EventHandler<T, EventParams<K>>, cofx: [Id, ...any[]][], interceptors: Interceptor<T>[]): void;
 export function regEvent<T = Record<string, any>>(id: Id, handler: EventHandler<T>, cofxOrInterceptors?: [Id, ...any[]][] | Interceptor<T>[], interceptors?: Interceptor<T>[]): void {
 
   registerHandler(KIND, id, handler);
@@ -90,7 +96,7 @@ enablePatches();
 
 // -- Interceptor Factories -------------------------------------------
 
-function eventHandlerInterceptor(handler: EventHandler): Interceptor {
+function eventHandlerInterceptor(handler: EventHandler<any>): Interceptor {
   return {
     id: 'fx-handler',
     before(context: Context) {
@@ -98,7 +104,7 @@ function eventHandlerInterceptor(handler: EventHandler): Interceptor {
       const params = event.slice(1); // Extract parameters excluding the event ID
 
       let effects: Effects = [];
-      const [newDb, patches, reversePatches] = produceWithPatches(getAppDb(),
+      const [newDb, patches, reversePatches] = produceWithPatches(getAppDb<Db>(),
         (draftDb: Draft<Db>) => {
           const coeffectsWithDb = { ...context.coeffects, draftDb };
           effects = handler(coeffectsWithDb, ...params) || [];
@@ -143,6 +149,13 @@ export function handle(eventV: EventVector): void {
 
   if (!handler) {
     consoleLog('error', `[reflex] no event handler registered for:`, eventId);
+    // Record the failed dispatch in the trace pipeline so devtools/MCP can
+    // surface typo'd event ids, not just the console.
+    const error: TraceErrorTag = { phase: 'missing-handler', message: `no event handler registered for: ${eventId}`, eventV };
+    withTrace(
+      { operation: eventId, opType: KIND, tags: { event: eventV, error } },
+      () => { }
+    );
     return;
   }
 

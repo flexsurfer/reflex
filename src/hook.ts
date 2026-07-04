@@ -1,5 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react'
-import type { SubVector } from './types';
+import type { Id, SubVector, SubPayloads, SubParams, SubResult, SubscribeVector } from './types';
 import { getOrCreateReaction, getSubVectorKey } from './subs';
 
 /**
@@ -15,7 +15,14 @@ import { getOrCreateReaction, getSubVectorKey } from './subs';
  * - Changing the serialized vector across renders re-subscribes automatically.
  * - `componentName` is a devtools tracing label; pass a static string. It is
  *   captured when the subscription (re)binds, not on every render.
+ *
+ * Typing: while `SubPayloads` is unaugmented this behaves as before —
+ * `useSubscription<T>([id, ...params])`. Once the app augments `SubPayloads`,
+ * declared sub ids infer params and result from the map, and undeclared ids
+ * are rejected at compile time.
  */
+export function useSubscription<K extends keyof SubPayloads & Id>(subVector: [K, ...SubParams<K>], componentName?: string): SubResult<K>;
+export function useSubscription<T>(subVector: SubscribeVector, componentName?: string): T;
 export function useSubscription<T>(subVector: SubVector, componentName: string = 'react component'): T {
   // Key the store bindings on the serialized vector so changing subscription
   // parameters re-subscribes to the new reaction instead of silently keeping

@@ -42,5 +42,18 @@ export type {
   DispatchLaterEffect,
   ErrorHandler,
   SubConfig,
-  EqualityCheckFn
+  EqualityCheckFn,
+  // Opt-in typed payload maps (augment EventPayloads/SubPayloads/EffectPayloads/AppDb from app code)
+  EventPayloads,
+  SubPayloads,
+  EffectPayloads,
+  AppDb,
+  DefaultAppDb,
+  EventParams,
+  EffectParams,
+  DispatchVector,
+  SubParams,
+  SubResult,
+  SubscribeVector,
+  TraceErrorTag
 } from './types';

@@ -33,7 +33,9 @@
     "test:clean": "jest --passWithNoTests --silent",
     "test:watch": "jest --passWithNoTests --watch",
     "test:ci": "jest --passWithNoTests --coverage --silent",
-    "prepublishOnly": "npm run test:ci && npm run build"
+    "test:types": "tsc --noEmit -p tests/types/tsconfig.json",
+    "test:types:dist": "tsc --noEmit -p tests/types/dist/tsconfig.json",
+    "prepublishOnly": "npm run test:ci && npm run test:types && npm run build && npm run test:types:dist"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",
