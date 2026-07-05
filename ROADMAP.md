@@ -1,6 +1,6 @@
 # Roadmap: AI-Development Must-Haves
 
-Prioritized improvements for [reflex](https://github.com/flexsurfer/reflex), ordered by impact. Devtools-specific work is tracked in [devtools-roadmap.md](devtools-roadmap.md). Items marked **(pairs with …)** need coordinated changes across both repos.
+Prioritized improvements for [reflex](https://github.com/flexsurfer/reflex), ordered by impact. Devtools-specific work is tracked in devtools [ROADMAP.md](https://github.com/flexsurfer/reflex-devtools/blob/main/ROADMAP.md). Items marked **(pairs with …)** need coordinated changes across both repos.
 
 Context: reflex's architecture (ID-indexed events/subs, pure handlers, effects isolation) already lets an AI agent work on a large app with minimal context — the `*-ids.ts` files act as an index, exact-match grep gives retrieval, and pure handlers bound verification to a single function. The items below close the remaining gaps: React-binding correctness, runtime performance at scale, compiler feedback, a closed observe→act→verify loop against the running app, and token-frugal runtime inspection.
 
