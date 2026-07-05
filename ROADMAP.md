@@ -1,10 +1,20 @@
 # Roadmap: AI-Development Must-Haves
 
-Prioritized improvements for [reflex](https://github.com/flexsurfer/reflex) and [reflex-devtools](https://github.com/flexsurfer/reflex-devtools), ordered by impact. Items marked **(pairs with …)** need coordinated changes across both repos.
+Prioritized improvements for [reflex](https://github.com/flexsurfer/reflex), ordered by impact. Devtools-specific work is tracked in [devtools-roadmap.md](devtools-roadmap.md). Items marked **(pairs with …)** need coordinated changes across both repos.
 
 Context: reflex's architecture (ID-indexed events/subs, pure handlers, effects isolation) already lets an AI agent work on a large app with minimal context — the `*-ids.ts` files act as an index, exact-match grep gives retrieval, and pure handlers bound verification to a single function. The items below close the remaining gaps: React-binding correctness, runtime performance at scale, compiler feedback, a closed observe→act→verify loop against the running app, and token-frugal runtime inspection.
 
 ---
+
+## Agent indexing model
+
+Reflex should be presented to AI agents as a small set of indexes and tools, not as a large prompt blob. There are three complementary indexes:
+
+1. **Static source index** — what exists and where it is implemented: event/sub/effect ids, file:line, payload signatures, emitted effects, sub dependency graph, dispatch/useSubscription call sites, and touched db keys. This comes from `npx reflex-map` and should be available as both `APP_MAP.md` (human/LLM fallback) and `.reflex/map.json` (machine/MCP input).
+2. **Runtime state/trace index** — what actually happened in the running app: current db shape, active subscription values, recent trace rows, single-trace details, and path-indexed writes (`find_state_changes(path)`). This lives in reflex-devtools storage and is exposed through MCP.
+3. **Compile-time contract index** — what is legal to call: `EventPayloads`, `SubPayloads`, `EffectPayloads`, and `AppDb` module augmentation. This turns agent mistakes into `tsc` feedback instead of runtime surprises.
+
+The intended agent retrieval order is: MCP static/runtime tools first (`get_reflex_map`, `get_handlers`, `get_app_state({ shape: true })`, `find_state_changes`, `dispatch_event`), then `APP_MAP.md`, then `*-ids.ts` + exact-match `rg`, and only then implementation files. Agents should not read `events.ts`/`subs.ts` end-to-end.
 
 ## Reflex (lib)
 
@@ -72,7 +82,7 @@ Context: reflex's architecture (ID-indexed events/subs, pure handlers, effects i
 ### P2
 
 - [ ] **Static manifest generator.**
-  A small CLI (`npx reflex-map`) that scans `regEvent`/`regSub`/`regEffect` calls and emits `APP_MAP.md`: id → file:line → params → effects emitted → sub dependency graph. Zero-drift documentation and the ideal first read for any agent session. If typed payload maps land, it can read signatures from the type map too.
+  A small CLI (`npx reflex-map`) that scans `regEvent`/`regSub`/`regEffect` registrations, id files, dispatch/useSubscription call sites, typed payload maps, and obvious db-key writes. Emit both `APP_MAP.md` and `.reflex/map.json`: id → kind → file:line → params/result → effects emitted → sub dependency graph → call sites → touched top-level db keys. Zero-drift documentation and the ideal first read for any agent session. The JSON output is also the input for devtools MCP `get_reflex_map`, `find_reflex_id`, `get_event_contract`, and `get_sub_graph`.
 
 - [ ] **Fix the `regEvent` overload heuristic.**
   `isCofxArray` (`src/events.ts`) distinguishes cofx from interceptors by inspecting `arr[0]`; an empty array is silently ambiguous and does nothing. A quiet failure mode worth eliminating.
@@ -82,34 +92,63 @@ Context: reflex's architecture (ID-indexed events/subs, pure handlers, effects i
 
 ---
 
-## Reflex DevTools + MCP (tools)
+## AI agent setup & distribution
 
-### P0
+### P0 — Project bootstrap
 
-- [ ] **Make `dispatch_event` return its outcome.** *(pairs with lib P0: error tracing)*
-  Currently `POST /api/dispatch` reports success before the handler runs — a typo'd event ID or a throwing handler both come back as "dispatched successfully." Have the client SDK report the resulting trace back over the WebSocket, and return patches + emitted effects (or the error) in the MCP tool response. This single change converts the MCP from "can poke the app" into a true REPL: action in, observed state-diff out, one round trip.
+- [ ] **Stop recommending full `llms.txt` as always-loaded instructions.**
+  Keep `llms.txt` as the complete fallback/reference, but update README guidance so Codex `AGENTS.md`, Claude `CLAUDE.md`, Cursor rules, and Copilot instructions are tiny router files, not pasted copies of the whole guide. The always-loaded file should say: this project uses Reflex; use the Reflex skill; prefer MCP/index tools before reading implementation files; fall back to `APP_MAP.md`, then `*-ids.ts` + exact-match `rg`.
 
-- [ ] **Two-tier trace access.**
-  `get_traces` returns full tags — `patches`, `reversePatches`, and `effects` per event — up to 50 traces at a time: a context bomb on any real app. Make the list call return compact rows (id, operation, opType, duration, event args) and add a `get_trace(id)` detail tool. Drop `reversePatches` from MCP output entirely — agents never time-travel.
+  Minimal Codex `AGENTS.md`:
 
-### P1
+  ```md
+  This project uses @flexsurfer/reflex.
+  Use the Reflex skill before changing state logic.
+  Prefer Reflex MCP/index tools before reading implementation files.
+  Do not read events.ts/subs.ts end-to-end; start from get_reflex_map, APP_MAP.md, or *-ids.ts.
+  Verify behavior with dispatch_event when the app/devtools MCP is connected.
+  ```
 
-- [ ] **`find_state_changes(path)` tool.**
-  The server already stores Immer patches per trace (`server/storage.ts`); index them by path and answer "which events wrote `todos.3.done`, in order?" server-side, returning `[{event, timestamp, patch}]`. This is *the* debugging question — answering it in one cheap call instead of having an agent scan fat traces is the biggest context-efficiency win available in the stack.
+  Minimal Claude `CLAUDE.md`:
 
-- [ ] **`sinceId` cursor on `get_traces`.**
-  The dispatch→verify loop needs "everything that happened after my action." Limit-from-the-end is ambiguous under concurrent activity. Cheap to add; also the fallback verify mechanism until dispatch-returns-outcome ships.
+  ```md
+  This project uses @flexsurfer/reflex.
+  Use the Reflex skill or plugin workflow for state work.
+  Prefer Reflex MCP/index tools before broad file reading.
+  ```
 
-### P2
+- [ ] **Create a shared `reflex` agent skill.**
+  Ship a focused skill whose description triggers on Reflex state-management work and whose body contains the context-frugal workflow: read the map first, locate handlers by id, keep events pure, isolate effects/coeffects, return view-ready subscription data, use typed payload maps, run focused tests, and verify with MCP `dispatch_event`. This is the canonical workflow for both Codex and Claude Code; `llms.txt` becomes its reference, not its always-loaded payload.
 
-- [ ] **Shape mode for `get_app_state`.**
-  Add `depth` or `shape: true` returning keys + types + collection sizes — the runtime equivalent of reading `db.ts`, and the right first call on an unfamiliar large app. The current full dump is unusable there.
+- [ ] **Add `npx reflex-agent init`.**
+  A bootstrap CLI should detect the host project and create/update the small router files plus local config:
+  `npx reflex-agent init --codex --claude --cursor --copilot`.
+  It should optionally add `AGENTS.md`, `CLAUDE.md`, `.agents/skills/reflex/SKILL.md` or plugin references, `.codex/config.toml` MCP config, Claude MCP config, and a script entry for `reflex-map`. Default behavior should be conservative: never overwrite existing guidance without showing a diff or writing a clearly marked Reflex section.
 
-- [ ] **Source locations in `get_handlers`.** *(depends on lib P1: source capture)*
-  Return file:line per handler id, so the agent goes from runtime observation to the exact source line with zero greps.
+### P1 — Plugin packaging
 
-- [ ] **Security caveat in the README.**
-  `/api/dispatch` mutates app state with no auth while `--host 0.0.0.0` is a documented option. One line: dev only, never expose beyond localhost/trusted networks.
+- [ ] **Codex plugin package.**
+  Package the Reflex skill plus MCP server configuration as a Codex plugin (`.codex-plugin/plugin.json`) so users can install one bundle instead of copying prompts. The plugin should declare the MCP dependency, expose the skill, and include a repo/personal marketplace entry for local testing. Project-local fallback remains `.agents/skills/reflex/SKILL.md`.
+
+- [ ] **Claude Code plugin package.**
+  Package the same workflow for Claude Code: plugin metadata, `skills/reflex/SKILL.md`, MCP server config, and a minimal `CLAUDE.md` router. Keep the skill text shared as much as possible so Codex and Claude do not drift in architecture rules.
+
+- [ ] **Document the MCP setup as the default agent loop.**
+  The happy path should be explicit:
+  1. app imports `enableTracing()` and `enableDevtools()` in dev only;
+  2. developer runs `npx reflex-devtools --mcp`;
+  3. AI client connects to `@flexsurfer/reflex-devtools-mcp`;
+  4. agent uses `get_reflex_map`/`get_handlers`/shape state first;
+  5. agent acts with `dispatch_event`;
+  6. agent verifies from returned patches/effects/errors, not by dumping state unless needed.
+
+### P2 — Guardrails and drift checks
+
+- [ ] **Optional hooks/checks for map drift.**
+  Provide a lightweight check that runs `reflex-map --check` when `*-ids.ts`, `events.ts`, `subs.ts`, `effects.ts`, or typed payload maps change. In Codex this can be a plugin-bundled hook; elsewhere it can be an npm script or pre-commit hook. The goal is to keep `APP_MAP.md` and `.reflex/map.json` trustworthy without forcing heavy tooling.
+
+- [ ] **Agent-facing examples and eval scenarios.**
+  Add small fixtures showing the intended cycle: "change one event", "debug wrong state path", "add a derived subscription", "fix missing effect", and "work with Map/Set patches." Each fixture should show the cheap path through indexes/MCP and the fallback path when MCP is unavailable.
 
 ---
 
@@ -138,9 +177,11 @@ Worth remembering the reverse direction too: the semantic event log, memoized su
 
 ## If you only do four things
 
-1. **`useSyncExternalStore` hook rewrite** (lib P0) — three correctness bugs, one fix; everything else assumes the binding can be trusted.
-2. **`dispatch_event` returns outcome** (tools P0 + lib error tracing) — completes the agent loop.
-3. **Typed payload maps** (lib P0) — closes the gap vs Redux Toolkit and adds the compiler to the agent's feedback loop.
-4. **Two-tier traces** (tools P0) — makes runtime inspection affordable in tokens on a real-sized app.
+*All four done.*
 
-Together these make the pitch airtight: indexed architecture (already there), a trustworthy React binding, compiler-checked wiring, and a runtime the agent can query and act on for less context than reading a single Redux slice.
+1. ✅ **`useSyncExternalStore` hook rewrite** (lib P0) — three correctness bugs, one fix; everything else assumes the binding can be trusted.
+2. ✅ **`dispatch_event` returns outcome** (tools P0 + lib error tracing) — completes the agent loop.
+3. ✅ **Typed payload maps** (lib P0) — closes the gap vs Redux Toolkit and adds the compiler to the agent's feedback loop.
+4. ✅ **Two-tier traces** (tools P0) — makes runtime inspection affordable in tokens on a real-sized app.
+
+Together these make the pitch airtight: indexed architecture (already there), a trustworthy React binding, compiler-checked wiring, and a runtime the agent can query and act on for less context than reading a single Redux slice — dispatch an event, get the state-diff back, one round trip.
